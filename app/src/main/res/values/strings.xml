@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name" translatable="false">Car Stats Widget</string>
+    <string name="github_url" translatable="false">https://github.com/Ixam97/CarStatsWidget</string>
+
+    <string name="login_prompt">Login to you Tibber account to populate state of charge widget.</string>
+    <string name="label_mail">Mail</string>
+    <string name="label_password">Password</string>
+    <string name="login_failed_prompt">Login failed!</string>
+    <string name="login_data_hint">This data is only used to access the public Tibber API. This app is not associated with Tibber.</string>
+    <string name="login_button_label">Login</string>
+
+    <string name="data_unavailable_prompt">Data unavailable!</string>
+    <string name="retry_button_label">Retry</string>
+
+    <string name="login_name">Logged in as %1$s</string>
+    <string name="last_seen_label">last seen: %1$s</string>
+    <string name="last_request_label">last API request: %1$s</string>
+    <string name="refresh_button_label">Refresh</string>
+    <string name="checkbox_widget_seen_date">Show last seen date in widget</string>
+    <string name="checkbox_widget_vehicle_name">Show vehicle name in widget</string>
+
+    <string name="about_title">About Car Stats Widget</string>
+    <string name="licenses_title">Open source licenses</string>
+    <string name="github_repository_label">GitHub repository</string>
+</resources>

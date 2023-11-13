@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_prompt">Logge dich in dein Tibber-Profil ein, um Daten im Widget anzuzeigen.</string>
+    <string name="label_mail">Mail</string>
+    <string name="label_password">Passwort</string>
+    <string name="login_failed_prompt">Login fehlgeschlagen!</string>
+    <string name="login_data_hint">Diese Daten werden ausschließlich benutzt, um auf die öffentliche Tibber-API zuzugreifen. Diese App steht nicht in direkter Verbindung mit Tibber.</string>
+    <string name="login_button_label">Einloggen</string>
+
+    <string name="data_unavailable_prompt">Daten nicht verfügbar!</string>
+    <string name="retry_button_label">Erneut versuchen</string>
+
+    <string name="login_name">Eingeloggt als %1$s</string>
+    <string name="last_seen_label">Zuletzt gesehen: %1$s</string>
+    <string name="last_request_label">Letzte API-Abfrage: %1$s</string>
+    <string name="refresh_button_label">Aktualisieren</string>
+    <string name="checkbox_widget_seen_date">Zeige \"zuletzt gesehen\" im Widget</string>
+    <string name="checkbox_widget_vehicle_name">Zeige Fahrzeugnamen im Widget</string>
+
+    <string name="about_title">Über Car Stats Widget</string>
+    <string name="licenses_title">Open Source Lizenzen</string>
+    <string name="github_repository_label">GitHub Repository</string>
+</resources>
