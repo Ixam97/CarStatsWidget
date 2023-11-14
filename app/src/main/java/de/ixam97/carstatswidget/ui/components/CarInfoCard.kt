@@ -60,7 +60,7 @@ fun CarInfoCard(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(5.dp)
+                            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
                         )
                     ) {
                         CarInfo(
@@ -77,30 +77,64 @@ fun CarInfoCard(viewModel: MainViewModel) {
                         .align(Alignment.CenterHorizontally)
                 )
             }
-            else  -> {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Error, null)
-                        Text(
-                            modifier = Modifier.weight(1f),
-                            text = stringResource(R.string.data_unavailable_prompt)
-                        )
-                        Button(
-                            onClick = { viewModel.requestCarData() },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            is CarDataInfo.Unavailable -> {
+                val unavailableCarInfoState = carInfoState.carDataInfo as CarDataInfo.Unavailable
+                ErrorCard(unavailableCarInfoState.message, viewModel)
+                if (unavailableCarInfoState.carData != null) {
+                    for (carData in unavailableCarInfoState.carData) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+                            )
                         ) {
-                            Text(text = stringResource(R.string.retry_button_label))
+                            CarInfo(
+                                carData = carData,
+                                refresh = { viewModel.requestCarData() }
+                            )
                         }
                     }
                 }
+            }
+            is CarDataInfo.NotLoggedIn -> {
+                ErrorCard((carInfoState.carDataInfo as CarDataInfo.NotLoggedIn). message, viewModel)
+            }
+        }
+    }
+}
 
+@Composable
+fun ErrorCard(message: String, viewModel: MainViewModel) {
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(Icons.Default.Error, null)
+                Text(
+                    fontWeight = FontWeight.Bold,
+                    text = stringResource(R.string.data_unavailable_prompt)
+                )
+            }
+            Text(
+                // modifier = Modifier.weight(1f),
+                text = message
+            )
+            Button(
+                onClick = { viewModel.requestCarData() },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text(text = stringResource(R.string.retry_button_label))
             }
         }
     }

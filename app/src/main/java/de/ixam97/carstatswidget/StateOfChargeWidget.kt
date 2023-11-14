@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -11,9 +12,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toBitmapOrNull
 import androidx.glance.*
 import androidx.glance.action.ActionParameters
@@ -159,20 +163,21 @@ class StateOfChargeWidget : GlanceAppWidget() {
 
     @Composable
     private fun UnavailableComponent(message: String = "Unavailable") {
+        val mainActivityIntent = Intent(LocalContext.current, MainActivity::class.java)
+        mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         Column(
             modifier = GlanceModifier
-                .clickable(onClick = actionRunCallback<UpdateCarDataAction>())
-                .fillMaxSize(),
+                .background(GlanceTheme.colors.errorContainer)
+                .clickable(onClick = actionStartActivity(mainActivityIntent))// actionRunCallback<UpdateCarDataAction>())
+                .cornerRadius(15.dp)
+                .fillMaxSize()
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant),
+                style = TextStyle(color = GlanceTheme.colors.onErrorContainer),
                 text = message
-            )
-            Button(
-                text = "Reload",
-                onClick = actionRunCallback<UpdateCarDataAction>()
             )
         }
     }
@@ -190,9 +195,17 @@ class StateOfChargeWidget : GlanceAppWidget() {
         val showImage = size.width > 230.dp
         val showDate = /* (size.height > 110.dp || showImage) &&*/ carDataInfo.showLastSeen
 
-        LaunchedEffect(url) {
-            carImageBitmap = context.getTibberImage(url)
-            Log.i("Widget", "LaunchedEffect")
+        LaunchedEffect(null) {
+            Log.i("Widget", "Start image loading")
+            val bitmapWasNull = carImageBitmap == null
+            val tmpBitmap = context.getTibberImage(url)
+            delay(100)
+            carImageBitmap = tmpBitmap
+            Log.i("Widget", "Image loading complete")
+            if (bitmapWasNull && carImageBitmap != null) {
+                Log.i("Widget", "Image now available, refreshing")
+                CarDataWorker.enqueue(context = context, force = false)
+            }
         }
 
         Box (
@@ -247,29 +260,54 @@ class StateOfChargeWidget : GlanceAppWidget() {
                 verticalAlignment = Alignment.Vertical.CenterVertically
             ) {
                 if (showImage) {
-                    if (carImageBitmap != null) {
-                        val resizedBitmap = getResizedBitmap(carImageBitmap!!, 400, ResizeBitmap.Width)
+
+                    val carIcon = AppCompatResources.getDrawable(context, R.drawable.ic_car)
+                    var imageProvider = ImageProvider(R.drawable.ic_car)
+                    carIcon?.let {
+                        DrawableCompat.setTint(
+                            it,
+                            GlanceTheme.colors.onSurfaceVariant.getColor(context).toArgb()
+                        )
+                        imageProvider = ImageProvider(it.toBitmap())
+                    }
+                    var imageHeight = 40.dp
+                    var imageWidth = 40.dp
+
+                    carImageBitmap?.let {
+                        val resizedBitmap =
+                            getResizedBitmap(it, 400, ResizeBitmap.Width)
+                        imageHeight = (LocalSize.current.height).coerceAtMost(70.dp)
+                        imageWidth = imageHeight * getAspectRatio(resizedBitmap)
+                        imageProvider = ImageProvider(resizedBitmap)
+                    }
+                    Image(
+                        modifier = GlanceModifier
+                            .height(imageHeight)
+                            .width(imageWidth),
+                        provider = imageProvider,
+                        // contentScale = ContentScale.Fit,
+                        contentDescription = "Tibber Image",
+                    )
+
+
+                    /*
+                    carImageBitmap?.let {
+                        val resizedBitmap =
+                            getResizedBitmap(it, 400, ResizeBitmap.Width)
                         val imageHeight = (LocalSize.current.height).coerceAtMost(70.dp)
                         val imageWidth = imageHeight * getAspectRatio(resizedBitmap)
+                        val imageProvider = ImageProvider(resizedBitmap)
                         Image(
                             modifier = GlanceModifier
                                 .height(imageHeight)
                                 .width(imageWidth),
-                            provider = ImageProvider(resizedBitmap),
+                            provider = imageProvider,
                             // contentScale = ContentScale.Fit,
-                            contentDescription = "Tibber Image"
+                            contentDescription = "Tibber Image",
                         )
-                    } else {
-                        Image(
-                            provider = ImageProvider(R.drawable.ic_car),
-                            contentDescription = "Placeholder",
-                            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant)
-                        )
-                        LaunchedEffect(null) {
-                            delay(200)
-                            StateOfChargeWidget().updateAll(context)
-                        }
                     }
+
+                     */
                 }
 
 /*

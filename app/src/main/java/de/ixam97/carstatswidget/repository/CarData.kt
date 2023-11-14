@@ -1,6 +1,7 @@
 package de.ixam97.carstatswidget.repository
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
@@ -33,7 +34,9 @@ sealed interface CarDataInfo {
     object Loading : CarDataInfo
 
     @Serializable
-    object NotLoggedIn: CarDataInfo
+    data class NotLoggedIn(
+        val message: String = "Not logged in"
+    ): CarDataInfo
 
     @Serializable
     data class Available(
@@ -43,7 +46,12 @@ sealed interface CarDataInfo {
     ) : CarDataInfo
 
     @Serializable
-    data class Unavailable(val message: String) : CarDataInfo
+    data class Unavailable(
+        val message: String,
+        val carData: List<CarData>? = null,
+        val showLastSeen: Boolean = true,
+        val showVehicleName: Boolean = true
+    ) : CarDataInfo
 
     @Serializable
     data class CarData(
@@ -89,80 +97,6 @@ object CarDataInfoStateDefinition: GlanceStateDefinition<CarDataInfo> {
                     Json.encodeToString(CarDataInfo.serializer(), t).encodeToByteArray()
                 )
             }
-        }
-    }
-}
-
-class CarDataWorker(
-    private val context: Context,
-    workerParameters: WorkerParameters
-) : CoroutineWorker(context, workerParameters) {
-
-    companion object {
-        private val uniqueWorkName = CarDataWorker::class.java.simpleName
-
-        fun enqueue(context: Context, force: Boolean = false) {
-            val manager = WorkManager.getInstance(context)
-            val requestBuilder = PeriodicWorkRequestBuilder<CarDataWorker>(
-                15,
-                TimeUnit.MINUTES
-            )
-            var workPolicy = ExistingPeriodicWorkPolicy.KEEP
-            if (force) {
-                workPolicy = ExistingPeriodicWorkPolicy.UPDATE
-            }
-
-            manager.enqueueUniquePeriodicWork(
-                uniqueWorkName,
-                workPolicy,
-                requestBuilder.build()
-            )
-        }
-
-        fun cancel(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(uniqueWorkName)
-        }
-    }
-
-    override suspend fun doWork(): Result {
-        val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(StateOfChargeWidget::class.java)
-        return try {
-            val preferencesManager = de.ixam97.carstatswidget.PreferencesManager(context = context)
-            val email = preferencesManager.getString("tibberMail", "")
-            val password = preferencesManager.getString("tibberPassword", "")
-            if (email == "" || password == "") {
-                setWidgetState(glanceIds, CarDataInfo.NotLoggedIn)
-            } else {
-                val carDataInfo = CarDataRepository.getCarDataInfo(email, password)
-                val carDataInfoWithSettings = if (carDataInfo is CarDataInfo.Available) {
-                    carDataInfo.copy(
-                        showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
-                        showVehicleName = preferencesManager.getBoolean("showVehicleName", true)
-                    )
-                } else {
-                    carDataInfo
-                }
-                setWidgetState(glanceIds, carDataInfoWithSettings)
-                Log.i("CarData", carDataInfoWithSettings.toString())
-            }
-            Result.success()
-        } catch (e: Exception) {
-            setWidgetState(glanceIds, CarDataInfo.Unavailable("Failed to load data"))
-            Log.e("CarData", e.stackTraceToString())
-            return Result.failure()
-        }
-    }
-
-    private suspend fun setWidgetState(glanceIds: List<GlanceId>, newState: CarDataInfo) {
-        glanceIds.forEach {glanceId ->
-            updateAppWidgetState(
-                context = context,
-                definition = CarDataInfoStateDefinition,
-                glanceId = glanceId,
-                updateState = { newState }
-            )
-            StateOfChargeWidget().update(context, glanceId)
         }
     }
 }

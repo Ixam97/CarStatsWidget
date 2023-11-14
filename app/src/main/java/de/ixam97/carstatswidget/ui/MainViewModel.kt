@@ -70,7 +70,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
             _tibberLoginState.update {
                 it.copy(loginPossible = true)
             }
-            verifyLogin()
+            // verifyLogin()
+            _globalState.update {
+                it.copy(isLoggedIn = true)
+            }
         } else {
             _globalState.update {
                 it.copy(isLoggedIn = false)
@@ -172,9 +175,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
             _tibberLoginState.update {
                 it.copy(loginFailed = !loginSuccess)
             }
-            _globalState.update {
-                it.copy(isLoggedIn = loginSuccess)
+            if (loginSuccess) {
+                _globalState.update {
+                    it.copy(isLoggedIn = true)
+                }
             }
+
             if (loginSuccess) {
                 preferencesManager.saveString("tibberMail", tibberMail)
                 preferencesManager.saveString("tibberPassword", tibberPassword)

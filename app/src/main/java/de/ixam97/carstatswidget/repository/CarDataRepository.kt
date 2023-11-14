@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
-import java.lang.Exception
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -39,17 +38,22 @@ object CarDataRepository {
     suspend fun getCarDataInfo(email: String, password: String): CarDataInfo {
         _carDataInfoFlow.emit(CarDataInfo.Loading)
         var dataResponse: TibberData? = null
+        var errorMessage: String = "Unknown Error"
         withContext(Dispatchers.IO) {
-            de.ixam97.carstatswidget.RetrofitInstance.tibberApi.run {
+            RetrofitInstance.tibberApi.run {
                 val tibberCredentials = TibberCredentials(email, password)
                 try {
-                    val token = authenticateTibber(tibberCredentials).body()?.token?:""
+                    val auth = authenticateTibber(tibberCredentials)
+                    Log.d(TAG, "Auth code: ${auth.code()}: ${auth.message()}, ${auth.body()}")
+                    if (auth.code() != 200) throw httpException(auth.code())
+                    val token = auth.body()?.token?:""
                     dataResponse = fetchTibberData(
                         auth = "Bearer $token",
                         query = TibberQuery("{me {homes {electricVehicles {id lastSeen name shortName battery {percent isCharging} imgUrl}}}}")
                     ).body()
                 } catch (e: Exception) {
                     Log.e(TAG, "Query failed: \n$e")
+                    errorMessage = e.localizedMessage?: "Unknown error"
                 }
 
                 if (dataResponse != null) {
@@ -86,11 +90,28 @@ object CarDataRepository {
             }
             CarDataInfo.Available(carData = mutableCarData.toList())
         } else {
-            CarDataInfo.Unavailable("Loading data failed")
+            CarDataInfo.Unavailable(errorMessage)
         }
 
         _carDataInfoFlow.emit(returnData)
 
         return returnData
+    }
+
+    fun httpException(code: Int): Exception {
+        val message = when (code) {
+            400 -> "Bad Request"
+            401 -> "Unauthorized"
+            403 -> "Forbidden"
+            404 -> "Not Found"
+            500 -> "Internal Server Error"
+            501 -> "Not Implemented"
+            502 -> "Bad Gateway"
+            503 -> "Service Unavailable"
+            504 -> "Gateway Timeout"
+
+            else -> "Unknown code"
+        }
+        return Exception("HTTP Code $code: $message")
     }
 }
