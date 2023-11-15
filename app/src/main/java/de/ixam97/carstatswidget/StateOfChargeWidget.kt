@@ -81,12 +81,10 @@ class StateOfChargeWidget : GlanceAppWidget() {
                     ) {
                     val carDataInfo = currentState<CarDataInfo>()
                     when (carDataInfo.status) {
-                        is CarDataStatus.Loading -> {
-                            LoadingComponent()
-                        }
                         is CarDataStatus.NotLoggedIn -> {
                             NotLoggedInComponent()
                         }
+                        is CarDataStatus.Loading,
                         is CarDataStatus.Unavailable,
                         is CarDataStatus.Available -> {
                             AvailableComponent(carDataInfo, carDataInfo.carData)
@@ -128,6 +126,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
         }
     }
 
+    /*
     @Composable
     private fun LoadingComponent() {
         Column(
@@ -142,7 +141,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
             )
         }
     }
-
+*/
     @Composable
     private fun NotLoggedInComponent() {
         val mainActivityIntent = Intent(LocalContext.current, MainActivity::class.java)
@@ -206,7 +205,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
         val context = LocalContext.current
 
         val showImage = size.width > 230.dp
-        val showDate = true /* (size.height > 110.dp || showImage) && carDataInfo.showLastSeen */
+        val showDate = carDataInfo.showLastSeen
 
         LaunchedEffect(null) {
             Log.i("Widget", "Start image loading")
@@ -341,7 +340,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         .fillMaxHeight()
                         .clickable(actionStartActivity(mainActivityIntent))
                 ) {
-                    if (/* carDataInfo.showVehicleName */ true) {
+                    if (carDataInfo.showVehicleName) {
                         Text(
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
@@ -376,13 +375,24 @@ class StateOfChargeWidget : GlanceAppWidget() {
                 }
             }
 
-            if (carDataInfo.status == CarDataStatus.Unavailable) {
-                Image(
-                    modifier = GlanceModifier.padding(10.dp),
-                    provider = ImageProvider(R.drawable.ic_offline),
-                    contentDescription =  null,
-                    colorFilter = ColorFilter.tint(ColorProvider(Color.Red))
-                )
+            when (carDataInfo.status) {
+                CarDataStatus.Unavailable -> {
+                    Image(
+                        modifier = GlanceModifier.padding(10.dp),
+                        provider = ImageProvider(R.drawable.ic_offline),
+                        contentDescription =  null,
+                        colorFilter = ColorFilter.tint(ColorProvider(Color.Red))
+                    )
+                }
+                CarDataStatus.Loading -> {
+                    Image(
+                        modifier = GlanceModifier.padding(10.dp),
+                        provider = ImageProvider(R.drawable.ic_hourglas),
+                        contentDescription =  null,
+                        colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant)
+                    )
+                }
+                else -> {}
             }
         }
     }

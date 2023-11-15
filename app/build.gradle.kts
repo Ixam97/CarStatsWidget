@@ -14,8 +14,8 @@ android {
         applicationId = "de.ixam97.carstatswidget"
         minSdk = 24
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.1.1.0001"
+        versionCode = 3
+        versionName = "0.1.2.0001"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -25,7 +25,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -56,7 +57,6 @@ android {
 dependencies {
 
     implementation(libs.core.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.activity.compose)
@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.accompanist.systemuicontroller)
     implementation(libs.aboutlibraries.core)
+    implementation(libs.androidx.appcompat.resources)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.espresso.core)

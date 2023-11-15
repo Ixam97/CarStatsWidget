@@ -56,6 +56,7 @@ class CarDataWorker(
             if (email == "" || password == "") {
                 setWidgetState(glanceIds, CarDataInfo(status = CarDataStatus.NotLoggedIn))
             } else {
+                setWidgetState(glanceIds, CarDataInfo(status = CarDataStatus.Loading))
                 val carDataInfo = CarDataRepository.getCarDataInfo(email, password)
                 val carDataInfoWithSettings = carDataInfo.copy(
                     showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
@@ -77,20 +78,21 @@ class CarDataWorker(
 
     private suspend fun setWidgetState(glanceIds: List<GlanceId>, newState: CarDataInfo) {
         glanceIds.forEach {glanceId ->
-
-
             val prevData = getAppWidgetState(
                 context = context,
                 definition = CarDataInfoStateDefinition,
                 glanceId = glanceId)
 
-            Log.d("CarDataWorker", "Car data length in widget state: ${prevData.carData.size}")
-
             updateAppWidgetState(
                 context = context,
                 definition = CarDataInfoStateDefinition,
                 glanceId = glanceId,
-                updateState = { newState.copy(carData = prevData.carData) }
+                updateState = {
+                    if (newState.status == CarDataStatus.Available) {
+                        newState
+                    } else
+                        newState.copy(carData = prevData.carData)
+                }
             )
             StateOfChargeWidget().update(context, glanceId)
         }
