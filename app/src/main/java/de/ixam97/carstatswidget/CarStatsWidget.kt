@@ -9,6 +9,7 @@ import android.os.SystemClock
 import android.util.Log
 import de.ixam97.carstatswidget.repository.CarDataInfo
 import de.ixam97.carstatswidget.repository.CarDataRepository
+import de.ixam97.carstatswidget.repository.CarDataStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -22,8 +23,8 @@ class CarStatsWidget: Application() {
     override fun onCreate() {
         super.onCreate()
         CoroutineScope(Dispatchers.IO).launch {
-            CarDataRepository.carDataInfoFlow.collect { carDataInfo ->
-                if (carDataInfo is CarDataInfo.Unavailable) {
+            CarDataRepository.carDataInfoState.collect { carDataInfo ->
+                if (carDataInfo.status == CarDataStatus.Unavailable) {
                     val alarmManager =
                         applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                     val pendingIntent = PendingIntent.getBroadcast(
@@ -42,7 +43,7 @@ class CarStatsWidget: Application() {
                 }
             }
         }
-        /*
+
         val alarmManager = applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = PendingIntent.getBroadcast(
             applicationContext,
@@ -52,13 +53,11 @@ class CarStatsWidget: Application() {
         )
         Log.d(TAG, "Setting up Alarm Manager")
         // sendBroadcast(Intent(applicationContext, WidgetUpdateReceiver::class.java))
-        alarmManager.setRepeating(
+        alarmManager.set(
             AlarmManager.RTC,
-            SystemClock.elapsedRealtime() + 10_000,
-            30_000,
+            System.currentTimeMillis() + 60_000,
+            // 60_000,
             pendingIntent
             )
-
-         */
     }
 }

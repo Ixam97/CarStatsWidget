@@ -52,11 +52,14 @@ import androidx.navigation.NavController
 import de.ixam97.carstatswidget.BuildConfig
 import de.ixam97.carstatswidget.ui.Screen
 import de.ixam97.carstatswidget.repository.CarDataInfo
+import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.ui.MainViewModel
 import de.ixam97.carstatswidget.ui.components.LoggedInComponent
 import de.ixam97.carstatswidget.ui.components.TibberLogin
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterialApi::class,
+@OptIn(
+    ExperimentalLayoutApi::class,
+    ExperimentalMaterialApi::class,
     ExperimentalMaterial3Api::class
 )
 @Composable
@@ -66,7 +69,7 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
     // val mainViewModel: MainViewModel = viewModel()
     val globalState by mainViewModel.globalState.collectAsState()
     val carInfoState by mainViewModel.carInfoState.collectAsState()
-    val isRefreshing = (carInfoState.carDataInfo is CarDataInfo.Loading)
+    val isRefreshing = (carInfoState.carDataInfo.status == CarDataStatus.Loading)
     val pullRefreshState = rememberPullRefreshState(isRefreshing, { mainViewModel.requestCarData() })
 
     Surface(

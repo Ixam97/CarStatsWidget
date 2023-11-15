@@ -43,32 +43,41 @@ import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import de.ixam97.carstatswidget.R
 import de.ixam97.carstatswidget.repository.CarDataInfo
+import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.ui.MainViewModel
 
 @Composable
 fun CarInfoCard(viewModel: MainViewModel) {
     val carInfoState by viewModel.carInfoState.collectAsState()
+    val carDataState by viewModel.carDataState.collectAsState()
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
+        if (carInfoState.carDataInfo.status == CarDataStatus.Unavailable) {
+            ErrorCard(carInfoState.carDataInfo.message?: "No Data", viewModel)
+        }
+
+        for (carData in carDataState) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+                )
+            ) {
+                CarInfo(
+                    carData = carData,
+                    refresh = { viewModel.requestCarData() }
+                )
+            }
+        }
+/*
         when (carInfoState.carDataInfo) {
+            is CarDataInfo.Loading,
             is CarDataInfo.Available -> {
-                for (carData in (carInfoState.carDataInfo as CarDataInfo.Available).carData) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                        )
-                    ) {
-                        CarInfo(
-                            carData = carData,
-                            refresh = { viewModel.requestCarData() }
-                        )
-                    }
-                }
+
             }
             is CarDataInfo.Loading -> {
                 CircularProgressIndicator(
@@ -78,29 +87,14 @@ fun CarInfoCard(viewModel: MainViewModel) {
                 )
             }
             is CarDataInfo.Unavailable -> {
-                val unavailableCarInfoState = carInfoState.carDataInfo as CarDataInfo.Unavailable
-                ErrorCard(unavailableCarInfoState.message, viewModel)
-                if (unavailableCarInfoState.carData != null) {
-                    for (carData in unavailableCarInfoState.carData) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                            )
-                        ) {
-                            CarInfo(
-                                carData = carData,
-                                refresh = { viewModel.requestCarData() }
-                            )
-                        }
-                    }
-                }
+
             }
             is CarDataInfo.NotLoggedIn -> {
                 ErrorCard((carInfoState.carDataInfo as CarDataInfo.NotLoggedIn). message, viewModel)
             }
         }
+
+ */
     }
 }
 

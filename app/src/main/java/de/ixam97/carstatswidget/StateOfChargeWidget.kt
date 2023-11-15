@@ -46,6 +46,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import coil.imageLoader
 import coil.request.CachePolicy
 import coil.request.ErrorResult
@@ -53,6 +54,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import de.ixam97.carstatswidget.repository.CarDataInfo
 import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
+import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
 import de.ixam97.carstatswidget.ui.MainActivity
 import de.ixam97.carstatswidget.util.ResizeBitmap
@@ -78,18 +80,16 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         .padding(all = if (fullSize.height > 70.dp) 10.dp else 0.dp)
                     ) {
                     val carDataInfo = currentState<CarDataInfo>()
-                    when (carDataInfo) {
-                        is CarDataInfo.Loading -> {
+                    when (carDataInfo.status) {
+                        is CarDataStatus.Loading -> {
                             LoadingComponent()
                         }
-                        is CarDataInfo.NotLoggedIn -> {
+                        is CarDataStatus.NotLoggedIn -> {
                             NotLoggedInComponent()
                         }
-                        is CarDataInfo.Available -> {
-                            AvailableComponent(carDataInfo)
-                        }
-                        is CarDataInfo.Unavailable -> {
-                            UnavailableComponent(carDataInfo.message)
+                        is CarDataStatus.Unavailable,
+                        is CarDataStatus.Available -> {
+                            AvailableComponent(carDataInfo, carDataInfo.carData)
                         }
                     }
                 }
@@ -183,8 +183,21 @@ class StateOfChargeWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun AvailableComponent(carDataInfo: CarDataInfo.Available) {
-        val carData = carDataInfo.carData[0]
+    private fun AvailableComponent(carDataInfo: CarDataInfo, carDataList: List<CarDataInfo.CarData>) {
+        // val carData = carDataInfo.carData[0]
+
+        val carData = if (carDataList.isNotEmpty()) carDataList[0] else null
+
+        if (carData == null) {
+            val message = if (carDataInfo.status == CarDataStatus.Unavailable) {
+                carDataInfo.message
+            } else {
+                null
+            }
+            UnavailableComponent(message?: "Unavailable")
+            return
+        }
+
         val mainActivityIntent = Intent(LocalContext.current, MainActivity::class.java)
         mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         val url = carData.imgUrl
@@ -193,7 +206,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
         val context = LocalContext.current
 
         val showImage = size.width > 230.dp
-        val showDate = /* (size.height > 110.dp || showImage) &&*/ carDataInfo.showLastSeen
+        val showDate = true /* (size.height > 110.dp || showImage) && carDataInfo.showLastSeen */
 
         LaunchedEffect(null) {
             Log.i("Widget", "Start image loading")
@@ -328,7 +341,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         .fillMaxHeight()
                         .clickable(actionStartActivity(mainActivityIntent))
                 ) {
-                    if (carDataInfo.showVehicleName) {
+                    if (/* carDataInfo.showVehicleName */ true) {
                         Text(
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
@@ -361,6 +374,15 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         )
                     }
                 }
+            }
+
+            if (carDataInfo.status == CarDataStatus.Unavailable) {
+                Image(
+                    modifier = GlanceModifier.padding(10.dp),
+                    provider = ImageProvider(R.drawable.ic_offline),
+                    contentDescription =  null,
+                    colorFilter = ColorFilter.tint(ColorProvider(Color.Red))
+                )
             }
         }
     }

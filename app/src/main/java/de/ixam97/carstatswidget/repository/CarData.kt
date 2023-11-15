@@ -26,33 +26,26 @@ import java.io.OutputStream
 import kotlinx.serialization.Serializable
 import java.lang.Exception
 import java.util.concurrent.TimeUnit
+@Serializable
+sealed interface CarDataStatus {
+    @Serializable
+    object Available: CarDataStatus
+    @Serializable
+    object NotLoggedIn: CarDataStatus
+    @Serializable
+    object Unavailable: CarDataStatus
+    @Serializable
+    object Loading: CarDataStatus
+}
 
 @Serializable
-sealed interface CarDataInfo {
-
-    @Serializable
-    object Loading : CarDataInfo
-
-    @Serializable
-    data class NotLoggedIn(
-        val message: String = "Not logged in"
-    ): CarDataInfo
-
-    @Serializable
-    data class Available(
-        val carData: List<CarData>,
-        val showLastSeen: Boolean = true,
-        val showVehicleName: Boolean = true
-    ) : CarDataInfo
-
-    @Serializable
-    data class Unavailable(
-        val message: String,
-        val carData: List<CarData>? = null,
-        val showLastSeen: Boolean = true,
-        val showVehicleName: Boolean = true
-    ) : CarDataInfo
-
+data class CarDataInfo(
+    val status: CarDataStatus,
+    val message: String? = null,
+    val carData: List<CarData> = emptyList(),
+    val showLastSeen: Boolean = true,
+    val showVehicleName: Boolean = true
+) {
     @Serializable
     data class CarData(
         val stateOfCharge: Int,
@@ -80,7 +73,7 @@ object CarDataInfoStateDefinition: GlanceStateDefinition<CarDataInfo> {
     }
 
     object CarDataInfoSerializer : Serializer<CarDataInfo> {
-        override val defaultValue = CarDataInfo.Unavailable("no data")
+        override val defaultValue = CarDataInfo(CarDataStatus.Unavailable, message = "No data")
 
         override suspend fun readFrom(input: InputStream): CarDataInfo = try {
             Json.decodeFromString(

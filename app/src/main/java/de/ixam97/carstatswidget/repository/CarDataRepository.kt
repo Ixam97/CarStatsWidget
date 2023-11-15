@@ -7,8 +7,12 @@ import de.ixam97.carstatswidget.repository.tibberData.TibberData
 import de.ixam97.carstatswidget.repository.tibberQuery.TibberQuery
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -17,8 +21,8 @@ import java.util.Date
 object CarDataRepository {
     private const val TAG = "CarDataRepository"
 
-    private val _carDataInfoFlow = MutableSharedFlow<CarDataInfo>()
-    val carDataInfoFlow: SharedFlow<CarDataInfo> = _carDataInfoFlow.asSharedFlow()
+    private val _carDataInfoState = MutableStateFlow<CarDataInfo>(CarDataInfo(CarDataStatus.Unavailable))
+    val carDataInfoState: StateFlow<CarDataInfo> = _carDataInfoState.asStateFlow()
 
     suspend fun verifyLoginData(mail: String, password: String): Boolean {
         var verifyResponse: Boolean = false
@@ -36,7 +40,11 @@ object CarDataRepository {
     }
 
     suspend fun getCarDataInfo(email: String, password: String): CarDataInfo {
-        _carDataInfoFlow.emit(CarDataInfo.Loading)
+        _carDataInfoState.update {
+            it.copy(
+                status = CarDataStatus.Loading
+            )
+        }
         var dataResponse: TibberData? = null
         var errorMessage: String = "Unknown Error"
         withContext(Dispatchers.IO) {
@@ -62,7 +70,7 @@ object CarDataRepository {
             }
         }
 
-        val returnData = if (dataResponse != null) {
+        if (dataResponse != null) {
             val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
             val localeTimeDateFormat = DateFormat.getDateTimeInstance()
             val lastUpdateDate = Date(System.currentTimeMillis())
@@ -88,14 +96,22 @@ object CarDataRepository {
                     )
                 )
             }
-            CarDataInfo.Available(carData = mutableCarData.toList())
+            _carDataInfoState.update {
+                it.copy(
+                    status = CarDataStatus.Available,
+                    carData = mutableCarData.toList()
+                )
+            }
         } else {
-            CarDataInfo.Unavailable(errorMessage)
+            _carDataInfoState.update {
+                it.copy(
+                    status = CarDataStatus.Unavailable,
+                    message = errorMessage
+                )
+            }
         }
 
-        _carDataInfoFlow.emit(returnData)
-
-        return returnData
+        return carDataInfoState.value
     }
 
     fun httpException(code: Int): Exception {

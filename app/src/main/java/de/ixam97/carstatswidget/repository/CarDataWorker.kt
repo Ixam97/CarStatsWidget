@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -53,23 +54,22 @@ class CarDataWorker(
             val email = preferencesManager.getString("tibberMail", "")
             val password = preferencesManager.getString("tibberPassword", "")
             if (email == "" || password == "") {
-                setWidgetState(glanceIds, CarDataInfo.NotLoggedIn())
+                setWidgetState(glanceIds, CarDataInfo(status = CarDataStatus.NotLoggedIn))
             } else {
                 val carDataInfo = CarDataRepository.getCarDataInfo(email, password)
-                val carDataInfoWithSettings = if (carDataInfo is CarDataInfo.Available) {
-                    carDataInfo.copy(
-                        showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
-                        showVehicleName = preferencesManager.getBoolean("showVehicleName", true)
-                    )
-                } else {
-                    carDataInfo
-                }
+                val carDataInfoWithSettings = carDataInfo.copy(
+                    showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
+                    showVehicleName = preferencesManager.getBoolean("showVehicleName", true)
+                )
                 setWidgetState(glanceIds, carDataInfoWithSettings)
                 Log.i("CarData", carDataInfoWithSettings.toString())
             }
             Result.success()
         } catch (e: Exception) {
-            setWidgetState(glanceIds, CarDataInfo.Unavailable("Failed to load data"))
+            setWidgetState(glanceIds, CarDataInfo(
+                status = CarDataStatus.Unavailable,
+                message = "Loading data failed: ${e.localizedMessage?: "Unknown error"}"
+            ))
             Log.e("CarData", e.stackTraceToString())
             return Result.failure()
         }
@@ -77,11 +77,20 @@ class CarDataWorker(
 
     private suspend fun setWidgetState(glanceIds: List<GlanceId>, newState: CarDataInfo) {
         glanceIds.forEach {glanceId ->
+
+
+            val prevData = getAppWidgetState(
+                context = context,
+                definition = CarDataInfoStateDefinition,
+                glanceId = glanceId)
+
+            Log.d("CarDataWorker", "Car data length in widget state: ${prevData.carData.size}")
+
             updateAppWidgetState(
                 context = context,
                 definition = CarDataInfoStateDefinition,
                 glanceId = glanceId,
-                updateState = { newState }
+                updateState = { newState.copy(carData = prevData.carData) }
             )
             StateOfChargeWidget().update(context, glanceId)
         }

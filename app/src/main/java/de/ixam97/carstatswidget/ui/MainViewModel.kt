@@ -15,6 +15,7 @@ import de.ixam97.carstatswidget.StateOfChargeWidget
 import de.ixam97.carstatswidget.repository.CarDataInfo
 import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
 import de.ixam97.carstatswidget.repository.CarDataRepository
+import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,8 +54,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
     private val _carInfoState = MutableStateFlow(CarInfoState())
     val carInfoState: StateFlow<CarInfoState> = _carInfoState.asStateFlow()
 
+    private val _carDataState = MutableStateFlow<List<CarDataInfo.CarData>>(emptyList())
+    val carDataState: StateFlow<List<CarDataInfo.CarData>> = _carDataState.asStateFlow()
+
     data class CarInfoState(
-        val carDataInfo: CarDataInfo = CarDataInfo.Unavailable("No Data"),
+        val carDataInfo: CarDataInfo = CarDataInfo(CarDataStatus.Unavailable, message = "No Data"),
         val dataAvailable: Boolean = false,
         val dataRequested: Boolean = false
     )
@@ -86,9 +90,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
             )
         }
         viewModelScope.launch {
-            CarDataRepository.carDataInfoFlow.collect { carDataInfo ->
+            CarDataRepository.carDataInfoState.collect { carDataInfo ->
+                Log.d("ViewModel", "Car data status: ${carDataInfo.status}")
                 _carInfoState.update { carInfoState ->
                     carInfoState.copy(carDataInfo = carDataInfo)
+                }
+                if (carDataInfo.status == CarDataStatus.Available) {
+                    _carDataState.update {
+                        carInfoState.value.carDataInfo.carData
+                    }
                 }
             }
         }
@@ -132,10 +142,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
         _globalState.update {
             it.copy(showLastSeen = checked)
         }
-        if (carInfoState.value.carDataInfo is CarDataInfo.Available) {
+        if (carInfoState.value.carDataInfo.status == CarDataStatus.Available) {
             _carInfoState.update {
                 it.copy(
-                    carDataInfo = (it.carDataInfo as CarDataInfo.Available).copy(
+                    carDataInfo = it.carDataInfo.copy(
                         showLastSeen = checked
                     )
                 )
@@ -149,10 +159,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
         _globalState.update {
             it.copy(showVehicleName = checked)
         }
-        if (carInfoState.value.carDataInfo is CarDataInfo.Available) {
+        if (carInfoState.value.carDataInfo.status == CarDataStatus.Available) {
             _carInfoState.update {
                 it.copy(
-                    carDataInfo = (it.carDataInfo as CarDataInfo.Available).copy(
+                    carDataInfo = it.carDataInfo.copy(
                         showVehicleName = checked
                     )
                 )
