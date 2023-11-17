@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
 import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
@@ -44,7 +45,8 @@ data class CarDataInfo(
     val message: String? = null,
     val carData: List<CarData> = emptyList(),
     val showLastSeen: Boolean = true,
-    val showVehicleName: Boolean = true
+    val showVehicleName: Boolean = true,
+    val vehicleIds: List<String> = emptyList()
 ) {
     @Serializable
     data class CarData(
@@ -60,16 +62,21 @@ data class CarDataInfo(
 
 object CarDataInfoStateDefinition: GlanceStateDefinition<CarDataInfo> {
 
-    private const val DATA_STORE_FILENAME = "carDataInfo"
+    private const val DATA_STORE_FILENAME_PREFIX = "carDataInfo_"
 
-    private val Context.datastore by dataStore(DATA_STORE_FILENAME, CarDataInfoSerializer)
+    // private val Context.datastore by dataStore(DATA_STORE_FILENAME, CarDataInfoSerializer)
 
-    override suspend fun getDataStore(context: Context, fileKey: String): DataStore<CarDataInfo> {
-        return context.datastore
-    }
+    // override suspend fun getDataStore(context: Context, fileKey: String): DataStore<CarDataInfo> {
+    //     return context.datastore
+    // }
+
+    override suspend fun getDataStore(context: Context, fileKey: String) = DataStoreFactory.create(
+        serializer = CarDataInfoSerializer,
+        produceFile = { getLocation(context, fileKey)}
+    )
 
     override fun getLocation(context: Context, fileKey: String): File {
-        return context.dataStoreFile(DATA_STORE_FILENAME)
+        return context.dataStoreFile(DATA_STORE_FILENAME_PREFIX + fileKey)
     }
 
     object CarDataInfoSerializer : Serializer<CarDataInfo> {

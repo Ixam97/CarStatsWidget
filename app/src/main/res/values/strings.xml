@@ -22,4 +22,13 @@
     <string name="about_title">About Car Stats Widget</string>
     <string name="licenses_title">Open source licenses</string>
     <string name="github_repository_label">GitHub repository</string>
+
+    <string name="widget_config_title">Configure Car Stats Widget</string>
+    <string name="widget_config_login_reqired">Login required</string>
+    <string name="widget_config_login_reqired_text">Please login to your Tibber account. Then try again to create a Widget.</string>
+    <string name="widget_config_fab_login">Login</string>
+    <string name="widget_config_fab_Done">Done</string>
+    <string name="widget_config_show_last_seen">Show last seen date</string>
+    <string name="widget_config_show_vehicle_name">Show vehicle name</string>
+    <string name="widget_config_visible_vehicles">Select vehicles to show:</string>
 </resources>

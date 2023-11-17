@@ -48,6 +48,7 @@ fun LoggedInComponent(viewModel: MainViewModel) {
         ) {
             Text(text = stringResource(R.string.refresh_button_label))
         }
+        /*
         Column {
             LabelledCheckbox(
                 modifier = Modifier.fillMaxWidth(),
@@ -66,5 +67,7 @@ fun LoggedInComponent(viewModel: MainViewModel) {
                 label = stringResource(R.string.checkbox_widget_vehicle_name)
             )
         }
+
+         */
     }
 }

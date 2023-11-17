@@ -10,8 +10,10 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.WorkManager
 import de.ixam97.carstatswidget.StateOfChargeWidget
+import de.ixam97.carstatswidget.WidgetData
 import de.ixam97.carstatswidget.repository.CarDataInfo
 import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
 import de.ixam97.carstatswidget.repository.CarDataRepository
@@ -137,40 +139,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
         CarDataWorker.enqueue(applicationContext, true)
     }
 
-    fun setShowLastSeen(checked: Boolean) {
-        preferencesManager.saveBoolean("showLastSeen", checked)
-        _globalState.update {
-            it.copy(showLastSeen = checked)
-        }
-        if (carInfoState.value.carDataInfo.status == CarDataStatus.Available) {
-            _carInfoState.update {
-                it.copy(
-                    carDataInfo = it.carDataInfo.copy(
-                        showLastSeen = checked
-                    )
-                )
-            }
-        }
-        refreshWidgets(applicationContext, carInfoState.value.carDataInfo)
-    }
-
-    fun setShowVehicleName(checked: Boolean) {
-        preferencesManager.saveBoolean("showVehicleName", checked)
-        _globalState.update {
-            it.copy(showVehicleName = checked)
-        }
-        if (carInfoState.value.carDataInfo.status == CarDataStatus.Available) {
-            _carInfoState.update {
-                it.copy(
-                    carDataInfo = it.carDataInfo.copy(
-                        showVehicleName = checked
-                    )
-                )
-            }
-        }
-        refreshWidgets(applicationContext, carInfoState.value.carDataInfo)
-    }
-
     private fun checkValidInputs() {
         val validInputs = tibberMail.isNotEmpty() && tibberPassword.isNotEmpty()
 
@@ -210,23 +178,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
         preferencesManager.saveString("tibberPassword", tibberPassword)
         _globalState.update {
             it.copy(isLoggedIn = false)
-        }
-    }
-
-    private fun refreshWidgets(context: Context, newState: CarDataInfo) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val glanceIds = manager.getGlanceIds(StateOfChargeWidget::class.java)
-                glanceIds.forEach {glanceId ->
-                    updateAppWidgetState(
-                        context = context,
-                        definition = CarDataInfoStateDefinition,
-                        glanceId = glanceId,
-                        updateState = { newState }
-                    )
-                    StateOfChargeWidget().update(context, glanceId)
-                }
-            }
         }
     }
 }

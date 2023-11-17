@@ -5,4 +5,6 @@
     android:minWidth="100dp"
     android:resizeMode="vertical|horizontal"
     android:widgetCategory="home_screen"
+    android:configure="de.ixam97.carstatswidget.ui.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable"
     />

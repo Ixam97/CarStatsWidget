@@ -114,6 +114,14 @@ object CarDataRepository {
         return carDataInfoState.value
     }
 
+    fun setNotLoggedIn() {
+        _carDataInfoState.update {
+            it.copy(
+                status = CarDataStatus.NotLoggedIn
+            )
+        }
+    }
+
     fun httpException(code: Int): Exception {
         val message = when (code) {
             400 -> "Bad Request"
