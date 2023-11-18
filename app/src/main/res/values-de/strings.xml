@@ -19,7 +19,9 @@
 
     <string name="about_title">Über Car Stats Widget</string>
     <string name="licenses_title">Open Source Lizenzen</string>
-    <string name="github_repository_label">GitHub Repository</string>
+    <string name="about_github">GitHub Repository</string>
+    <string name="about_latest_version">Aktuellste Version: %1$s</string>
+    <string name="about_check_version">Überprüfen</string>
 
     <string name="widget_config_title">Car Stats Widget konfigurieren</string>
     <string name="widget_config_login_reqired">Login erforderlich</string>

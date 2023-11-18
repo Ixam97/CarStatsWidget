@@ -10,10 +10,16 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import de.ixam97.carstatswidget.CarStatsWidget
 import de.ixam97.carstatswidget.ui.components.Navigation
 import de.ixam97.carstatswidget.ui.theme.CarStatsWidgetTheme
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
     private var navController: NavController? = null
     override fun onResume() {
         super.onResume()
@@ -25,6 +31,7 @@ class MainActivity : ComponentActivity() {
             }
             anim {  }
         }
+        (application as CarStatsWidget).updateGitHubVersion()
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

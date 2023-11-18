@@ -1,33 +1,32 @@
 package de.ixam97.carstatswidget.ui
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.WorkManager
-import de.ixam97.carstatswidget.StateOfChargeWidget
-import de.ixam97.carstatswidget.WidgetData
+import de.ixam97.carstatswidget.BuildConfig
+import de.ixam97.carstatswidget.CarStatsWidget
 import de.ixam97.carstatswidget.repository.CarDataInfo
-import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
 import de.ixam97.carstatswidget.repository.CarDataRepository
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
-import kotlinx.coroutines.Dispatchers
+import de.ixam97.carstatswidget.util.SemanticVersion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainViewModel(application: Application) : AndroidViewModel(application = application) {
+
+    companion object {
+        private const val TAG = "MainViewModel"
+    }
 
     val preferencesManager = de.ixam97.carstatswidget.PreferencesManager(context = application)
     val workManager = WorkManager.getInstance(application)
@@ -40,8 +39,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
 
     data class GlobalState(
         val isLoggedIn: Boolean? = null,
-        val showLastSeen: Boolean? = null,
-        val showVehicleName: Boolean? = null
+        val updateAvailable: Boolean? = null,
+        val currentVersion: String = BuildConfig.VERSION_NAME,
+        val availableVersion: String? = null
     )
 
     private val _tibberLoginState = MutableStateFlow(TibberLoginState())
@@ -85,12 +85,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
                 it.copy(isLoggedIn = false)
             }
         }
-        _globalState.update {
-            it.copy(
-                showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
-                showVehicleName = preferencesManager.getBoolean("showVehicleName", true)
-            )
-        }
         viewModelScope.launch {
             CarDataRepository.carDataInfoState.collect { carDataInfo ->
                 Log.d("ViewModel", "Car data status: ${carDataInfo.status}")
@@ -101,6 +95,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
                     _carDataState.update {
                         carInfoState.value.carDataInfo.carData
                     }
+                }
+            }
+        }
+        viewModelScope.launch {
+            getApplication<CarStatsWidget>().gitHubVersionStateFlow.collect {gitHubVersion ->
+                val currentVersion = BuildConfig.VERSION_NAME
+                Log.d(TAG, "Current version: $currentVersion, latest Version: $gitHubVersion")
+                _globalState.update {
+                    it.copy(
+                        updateAvailable = if (gitHubVersion == null) null else SemanticVersion.compareVersions(
+                            v1 = SemanticVersion(currentVersion),
+                            v2 = SemanticVersion(gitHubVersion)
+                        ),
+                        availableVersion = gitHubVersion
+                    )
                 }
             }
         }
@@ -137,6 +146,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
 
     fun requestCarData() {
         CarDataWorker.enqueue(applicationContext, true)
+    }
+
+    fun checkForUpdates() {
+        (applicationContext as CarStatsWidget).updateGitHubVersion()
     }
 
     private fun checkValidInputs() {

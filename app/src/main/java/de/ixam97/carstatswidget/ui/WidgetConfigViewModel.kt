@@ -7,7 +7,6 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import de.ixam97.carstatswidget.WidgetData
 import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
 import de.ixam97.carstatswidget.repository.CarDataRepository

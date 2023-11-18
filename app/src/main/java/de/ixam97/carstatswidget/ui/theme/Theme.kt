@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +38,7 @@ val LightColorScheme = lightColorScheme(
     */
 )
 
+
 @Composable
 fun CarStatsWidgetTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -62,9 +64,18 @@ fun CarStatsWidgetTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    // logic for which custom palette to use
+    val customColorsPalette =
+        if (darkTheme) DarkCustomColorsPalette
+        else LightCustomColorsPalette
+
+    CompositionLocalProvider(
+        LocalCustomColorsPalette provides customColorsPalette
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

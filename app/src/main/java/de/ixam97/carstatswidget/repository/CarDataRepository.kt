@@ -6,11 +6,8 @@ import de.ixam97.carstatswidget.repository.tibberCredentials.TibberCredentials
 import de.ixam97.carstatswidget.repository.tibberData.TibberData
 import de.ixam97.carstatswidget.repository.tibberQuery.TibberQuery
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
@@ -23,6 +20,27 @@ object CarDataRepository {
 
     private val _carDataInfoState = MutableStateFlow<CarDataInfo>(CarDataInfo(CarDataStatus.Unavailable))
     val carDataInfoState: StateFlow<CarDataInfo> = _carDataInfoState.asStateFlow()
+
+    suspend fun getGitHubVersion(): String {
+        var version: String = "0.0.0"
+        withContext(Dispatchers.IO) {
+            RetrofitInstance.gitHubVersionChecker.run {
+                try {
+                    // Log.d(TAG, "URL: ${fetchGitHubVersion().raw().request.url}")
+                    version = fetchGitHubVersion().raw().request.url.toString().split("/v").run {
+                        if (this.size > 1) {
+                            this.last()
+                        } else {
+                            version
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Query failed: \n$e")
+                }
+            }
+        }
+        return version
+    }
 
     suspend fun verifyLoginData(mail: String, password: String): Boolean {
         var verifyResponse: Boolean = false

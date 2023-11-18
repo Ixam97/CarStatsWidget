@@ -1,32 +1,18 @@
 package de.ixam97.carstatswidget.repository
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.util.Log
 import androidx.datastore.core.CorruptionException
-import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
-import androidx.datastore.dataStore
 import androidx.datastore.dataStoreFile
-import androidx.glance.GlanceId
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.GlanceStateDefinition
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
-import de.ixam97.carstatswidget.StateOfChargeWidget
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import kotlinx.serialization.Serializable
-import java.lang.Exception
-import java.util.concurrent.TimeUnit
+
 @Serializable
 sealed interface CarDataStatus {
     @Serializable

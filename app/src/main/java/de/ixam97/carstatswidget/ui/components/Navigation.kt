@@ -11,8 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import de.ixam97.carstatswidget.ui.Screen
 import de.ixam97.carstatswidget.ui.MainViewModel
+import de.ixam97.carstatswidget.ui.Screen
 import de.ixam97.carstatswidget.ui.screens.AboutScreen
 import de.ixam97.carstatswidget.ui.screens.LicensesScreen
 import de.ixam97.carstatswidget.ui.screens.MainScreen
@@ -40,7 +40,7 @@ fun Navigation(mainViewModel: MainViewModel, destination: String? = null): NavCo
             slideComposable(
                 route = Screen.About.route
             ) {
-                AboutScreen(navController)
+                AboutScreen(mainViewModel, navController)
             }
             slideComposable(
                 route = Screen.Licenses.route

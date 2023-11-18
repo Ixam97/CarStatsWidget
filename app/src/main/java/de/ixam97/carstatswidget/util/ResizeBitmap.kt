@@ -1,7 +1,6 @@
 package de.ixam97.carstatswidget.util
 
 import android.graphics.Bitmap
-import android.util.Log
 
 sealed interface ResizeBitmap {
     object Height : ResizeBitmap

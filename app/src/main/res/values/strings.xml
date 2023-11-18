@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name" translatable="false">Car Stats Widget</string>
     <string name="github_url" translatable="false">https://github.com/Ixam97/CarStatsWidget</string>
+    <string name="github_release_url" translatable="false">https://github.com/Ixam97/CarStatsWidget/releases/latest</string>
 
     <string name="login_prompt">Login to you Tibber account to populate state of charge widget.</string>
     <string name="label_mail">Mail</string>
@@ -21,7 +22,9 @@
 
     <string name="about_title">About Car Stats Widget</string>
     <string name="licenses_title">Open source licenses</string>
-    <string name="github_repository_label">GitHub repository</string>
+    <string name="about_github">GitHub repository</string>
+    <string name="about_latest_version">Latest version: %1$s</string>
+    <string name="about_check_version">Check</string>
 
     <string name="widget_config_title">Configure Car Stats Widget</string>
     <string name="widget_config_login_reqired">Login required</string>

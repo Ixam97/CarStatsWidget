@@ -2,18 +2,12 @@ package de.ixam97.carstatswidget.repository
 
 import android.content.Context
 import android.util.Log
-import androidx.glance.GlanceId
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.getAppWidgetState
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import de.ixam97.carstatswidget.StateOfChargeWidget
 import de.ixam97.carstatswidget.WidgetData
-import java.lang.Exception
 import java.util.concurrent.TimeUnit
 
 class CarDataWorker(
