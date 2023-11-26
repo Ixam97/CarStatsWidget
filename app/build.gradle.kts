@@ -14,8 +14,8 @@ android {
         applicationId = "de.ixam97.carstatswidget"
         minSdk = 24
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.1.4"
+        versionCode = 5
+        versionName = "0.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

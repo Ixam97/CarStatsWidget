@@ -7,7 +7,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import de.ixam97.carstatswidget.WidgetData
+import de.ixam97.carstatswidget.widgets.StateOfChargeWidgetData
 import java.util.concurrent.TimeUnit
 
 class CarDataWorker(
@@ -50,20 +50,20 @@ class CarDataWorker(
             val password = preferencesManager.getString("tibberPassword", "")
             if (email == "" || password == "") {
                 // setWidgetState(glanceIds, CarDataInfo(status = CarDataStatus.NotLoggedIn))
-                WidgetData.updateStatus(context, CarDataStatus.NotLoggedIn)
+                StateOfChargeWidgetData.updateStatus(context, CarDataStatus.NotLoggedIn)
                 CarDataRepository.setNotLoggedIn()
             } else {
                 // setWidgetState(glanceIds, CarDataInfo(status = CarDataStatus.Loading))
-                WidgetData.updateStatus(context, CarDataStatus.Loading)
+                StateOfChargeWidgetData.updateStatus(context, CarDataStatus.Loading)
                 val carDataInfo = CarDataRepository.getCarDataInfo(email, password)
-                val carDataInfoWithSettings = carDataInfo.copy(
-                    showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
-                    showVehicleName = preferencesManager.getBoolean("showVehicleName", true)
-                )
+                // val carDataInfoWithSettings = carDataInfo.copy(
+                //     showLastSeen = preferencesManager.getBoolean("showLastSeen", true),
+                //     showVehicleName = preferencesManager.getBoolean("showVehicleName", true)
+                // )
                 // setWidgetState(glanceIds, carDataInfoWithSettings)
-                WidgetData.updateData(context, carDataInfo.carData)
-                WidgetData.updateStatus(context, carDataInfo.status)
-                Log.i("CarData", carDataInfoWithSettings.toString())
+                StateOfChargeWidgetData.updateData(context, carDataInfo.carData)
+                StateOfChargeWidgetData.updateStatus(context, carDataInfo.status)
+                Log.i("CarData", carDataInfo.toString())
             }
             Result.success()
         } catch (e: Exception) {
@@ -71,7 +71,7 @@ class CarDataWorker(
             //     status = CarDataStatus.Unavailable,
             //     message = "Loading data failed: ${e.localizedMessage?: "Unknown error"}"
             // ))
-            WidgetData.updateStatus(context, CarDataStatus.Unavailable)
+            StateOfChargeWidgetData.updateStatus(context, CarDataStatus.Unavailable)
             Log.e("CarData", e.stackTraceToString())
             return Result.failure()
         }

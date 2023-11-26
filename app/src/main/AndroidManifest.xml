@@ -31,7 +31,7 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
             </intent-filter>
         </activity>
-        <receiver android:name=".StateOfChargeWidgetReceiver"
+        <receiver android:name=".widgets.StateOfChargeWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

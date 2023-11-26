@@ -7,11 +7,12 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import de.ixam97.carstatswidget.WidgetData
-import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
+import de.ixam97.carstatswidget.widgets.StateOfChargeWidgetData
+import de.ixam97.carstatswidget.widgets.StateOfChargeWidgetStateDefinition
 import de.ixam97.carstatswidget.repository.CarDataRepository
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
+import de.ixam97.carstatswidget.widgets.WidgetConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -34,6 +35,7 @@ class WidgetConfigViewModel(application: Application) : AndroidViewModel(applica
         val showVehicleNames: Boolean = true,
         val showLastSeenDates: Boolean = true,
         val vehicleList: List<Vehicle> = emptyList(),
+        val basicLayout: Boolean = false,
         val done: Boolean = false,
         val ready: Boolean = false,
         val dataStatus: CarDataStatus = CarDataStatus.Loading
@@ -86,6 +88,12 @@ class WidgetConfigViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    fun changeBasicLayout() {
+        _widgetConfigState.update {
+            it.copy(basicLayout = !it.basicLayout)
+        }
+    }
+
     fun changeSelectedVehicleId(id: String) {
         _widgetConfigState.update { widgetConfigState ->
             val newVehicleList = widgetConfigState.vehicleList.toMutableList()
@@ -99,12 +107,13 @@ class WidgetConfigViewModel(application: Application) : AndroidViewModel(applica
     fun clickedDone() {
         viewModelScope.launch {
             widgetGlanceId?.apply {
-                WidgetData.updateConfig(
+                StateOfChargeWidgetData.updateConfig(
                     context = getApplication(),
-                    config = WidgetData.WidgetConfig(
+                    config = WidgetConfig(
                         showVehicleName = widgetConfigState.value.showVehicleNames,
                         showLastSeen = widgetConfigState.value.showLastSeenDates,
-                        vehicleIds = widgetConfigState.value.vehicleList.filter { it.isVisible }.map { it.id }
+                        vehicleIds = widgetConfigState.value.vehicleList.filter { it.isVisible }.map { it.id },
+                        basicLayout = widgetConfigState.value.basicLayout
                     ),
                     glanceId = this
                 )
@@ -128,20 +137,21 @@ class WidgetConfigViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             val currentWidgetState = getAppWidgetState(
                 context = getApplication(),
-                definition = CarDataInfoStateDefinition,
+                definition = StateOfChargeWidgetStateDefinition,
                 glanceId = glanceId
             )
             _widgetConfigState.update {
                 val vehicles = it.vehicleList.toMutableList()
 
                 it.vehicleList.forEachIndexed { index, vehicle ->
-                    vehicles[index] = vehicle.copy(isVisible = currentWidgetState.vehicleIds.contains(vehicle.id))
+                    vehicles[index] = vehicle.copy(isVisible = currentWidgetState.widgetConfig.vehicleIds.contains(vehicle.id))
                 }
 
                 it.copy(
-                    showLastSeenDates = currentWidgetState.showLastSeen,
-                    showVehicleNames = currentWidgetState.showVehicleName,
+                    showLastSeenDates = currentWidgetState.widgetConfig.showLastSeen,
+                    showVehicleNames = currentWidgetState.widgetConfig.showVehicleName,
                     vehicleList = vehicles,
+                    basicLayout = currentWidgetState.widgetConfig.basicLayout,
                     ready = it.vehicleList.isNotEmpty() && widgetGlanceId != null
                 )
             }

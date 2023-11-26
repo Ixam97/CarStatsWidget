@@ -1,4 +1,4 @@
-package de.ixam97.carstatswidget
+package de.ixam97.carstatswidget.widgets
 
 import android.content.Context
 import android.content.Intent
@@ -32,7 +32,6 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CircularProgressIndicator
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
@@ -41,8 +40,6 @@ import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.background
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.appwidget.state.getAppWidgetState
-import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -67,8 +64,8 @@ import coil.request.CachePolicy
 import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import de.ixam97.carstatswidget.R
 import de.ixam97.carstatswidget.repository.CarDataInfo
-import de.ixam97.carstatswidget.repository.CarDataInfoStateDefinition
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
 import de.ixam97.carstatswidget.ui.MainActivity
@@ -81,7 +78,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
 
     val TAG = "Widget"
 
-    override val stateDefinition = CarDataInfoStateDefinition
+    override val stateDefinition = StateOfChargeWidgetStateDefinition
     override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -96,8 +93,8 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         .cornerRadius(25.dp)
                         .padding(all = if (fullSize.height > 70.dp) 10.dp else 0.dp)
                     ) {
-                    val carDataInfo = currentState<CarDataInfo>()
-                    when (carDataInfo.status) {
+                    val stateOfChargeWidgetState = currentState<StateOfChargeWidgetState>()
+                    when (stateOfChargeWidgetState.status) {
                         is CarDataStatus.NotLoggedIn -> {
                             NotLoggedInComponent()
                         }
@@ -108,18 +105,28 @@ class StateOfChargeWidget : GlanceAppWidget() {
                                 modifier = GlanceModifier
                                     .fillMaxHeight()
                             ) {
-                                val filteredCarData = carDataInfo.carData.filter{
-                                    carDataInfo.vehicleIds.contains(it.id)
+                                val filteredCarData = stateOfChargeWidgetState.carData.filter{
+                                    stateOfChargeWidgetState.widgetConfig.vehicleIds.contains(it.id)
                                 }
                                 val size = LocalSize.current
                                 val gap = 2.dp
                                 val barHeight = (size.height - (20.dp + ((gap.times(filteredCarData.size - 1))))) / filteredCarData.size
                                 filteredCarData.forEachIndexed {index, carData ->
                                     Box (modifier = GlanceModifier.defaultWeight()) {
-                                        AvailableComponent(
-                                            carDataInfo = carDataInfo,
-                                            carData = carData,
-                                            availableHeight = barHeight)
+                                        when {
+                                            stateOfChargeWidgetState.widgetConfig.basicLayout -> {
+                                                BasicAvailableComponent(
+                                                    config = stateOfChargeWidgetState.widgetConfig,
+                                                    carData = carData
+                                                )
+                                            }
+                                            else -> {
+                                                AvailableComponent(
+                                                    stateOfChargeWidgetState = stateOfChargeWidgetState,
+                                                    carData = carData,
+                                                    availableHeight = barHeight)
+                                            }
+                                        }
                                     }
                                     if (index < filteredCarData.size - 1) {
                                         Spacer(modifier = GlanceModifier.size(gap))
@@ -129,7 +136,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
                                     UnavailableComponent("No data available")
                                 }
                             }
-                            when (carDataInfo.status) {
+                            when (stateOfChargeWidgetState.status) {
                                 CarDataStatus.Unavailable -> {
                                     Image(
                                         modifier = GlanceModifier.padding(10.dp),
@@ -248,9 +255,112 @@ class StateOfChargeWidget : GlanceAppWidget() {
     }
 
     @Composable
+    private fun BasicAvailableComponent(
+        config: WidgetConfig,
+        carData: CarDataInfo.CarData
+    ) {
+        val mainActivityIntent = Intent(LocalContext.current, MainActivity::class.java)
+        mainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val url = carData.imgUrl
+        var carImageBitmap by remember(carData.id) { mutableStateOf<Bitmap?>(null) }
+        val context = LocalContext.current
+
+        LaunchedEffect(carData.id) {
+            Log.i("Widget", "Start image loading")
+            val bitmapWasNull = carImageBitmap == null
+            val tmpBitmap = context.getTibberImage(url)
+            delay(100)
+            carImageBitmap = tmpBitmap
+            Log.i("Widget", "Image loading complete")
+            if (bitmapWasNull && carImageBitmap != null) {
+                Log.i("Widget", "Image now available, refreshing")
+                CarDataWorker.enqueue(context = context, force = false)
+            }
+        }
+
+        Row(
+            modifier = GlanceModifier
+                .padding(end = 10.dp)
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val carIcon = AppCompatResources.getDrawable(context, R.drawable.ic_car)
+            var imageProvider = ImageProvider(R.drawable.ic_car)
+            carIcon?.let {
+                DrawableCompat.setTint(
+                    it,
+                    GlanceTheme.colors.onSurfaceVariant.getColor(context).toArgb()
+                )
+                imageProvider = ImageProvider(it.toBitmap())
+            }
+            var imageHeight = 40.dp
+            var imageWidth = 40.dp
+
+            carImageBitmap?.let {
+                val resizedBitmap =
+                    getResizedBitmap(it, 400, ResizeBitmap.Width)
+                imageHeight = 70.dp
+                imageWidth = imageHeight * getAspectRatio(resizedBitmap)
+                imageProvider = ImageProvider(resizedBitmap)
+            }
+            Image(
+                modifier = GlanceModifier
+                    .clickable( onClick = actionRunCallback<UpdateCarDataAction>())
+                    .height(imageHeight)
+                    .width(imageWidth),
+                provider = imageProvider,
+                // contentScale = ContentScale.Fit,
+                contentDescription = "Tibber Image",
+            )
+            Spacer(
+                modifier = GlanceModifier
+                    .defaultWeight()
+            )
+            Column(
+                modifier = GlanceModifier
+                    .clickable(onClick = actionStartActivity(mainActivityIntent)),
+                horizontalAlignment = Alignment.End
+            ) {
+                if (config.showVehicleName) {
+                    Text(
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.End,
+                            fontSize = 18.sp
+                        ),
+                        text = carData.shortName
+                    )
+                }
+                Text(
+                    modifier = GlanceModifier.padding(vertical = (-5).dp),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 35.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.End
+                    ),
+                    text = "${carData.stateOfCharge}%"
+                )
+                if (config.showLastSeen) {
+                    Text(
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                            fontWeight = FontWeight.Normal,
+                            textAlign = TextAlign.End,
+                            fontSize = 10.sp
+                        ),
+                        text = carData.lastSeen
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
     private fun AvailableComponent(
         modifier: GlanceModifier = GlanceModifier,
-        carDataInfo: CarDataInfo,
+        stateOfChargeWidgetState: StateOfChargeWidgetState,
         carData: CarDataInfo.CarData,
         availableHeight: Dp
     ) {
@@ -262,7 +372,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
         val context = LocalContext.current
 
         val showImage = size.width > 230.dp
-        val showDate = carDataInfo.showLastSeen
+        val showDate = stateOfChargeWidgetState.widgetConfig.showLastSeen
 
         LaunchedEffect(carData.id) {
             Log.i("Widget", "Start image loading")
@@ -398,7 +508,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         .fillMaxHeight()
                         .clickable(actionStartActivity(mainActivityIntent))
                 ) {
-                    if (carDataInfo.showVehicleName) {
+                    if (stateOfChargeWidgetState.widgetConfig.showVehicleName) {
                         Text(
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
@@ -468,89 +578,3 @@ class UpdateCarDataAction : ActionCallback {
     }
 }
 
-object WidgetData {
-
-    private const val TAG ="WidgetData"
-
-    data class WidgetConfig(
-        val showVehicleName: Boolean = true,
-        val showLastSeen: Boolean = true,
-        val vehicleIds: List<String> = emptyList()
-    )
-
-    suspend fun updateConfig(context: Context, config: WidgetConfig) {
-        val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(StateOfChargeWidget::class.java)
-
-        glanceIds.forEach {glanceId ->
-            updateConfig(context, config, glanceId)
-        }
-    }
-
-    suspend fun updateConfig(context: Context, config: WidgetConfig, glanceId: GlanceId) {
-        val prevWidgetState = getAppWidgetState(
-            context = context,
-            definition = CarDataInfoStateDefinition,
-            glanceId = glanceId)
-
-        updateAppWidgetState(
-            context = context,
-            definition = CarDataInfoStateDefinition,
-            glanceId = glanceId,
-            updateState = {
-                prevWidgetState.copy(
-                    showVehicleName = config.showVehicleName,
-                    showLastSeen = config.showLastSeen,
-                    vehicleIds = config.vehicleIds
-                )
-            }
-        )
-        Log.d(TAG, "Updating config for Glance ID ${glanceId.toString()}")
-        StateOfChargeWidget().update(context, glanceId)
-    }
-    suspend fun updateStatus(context: Context, status: CarDataStatus) {
-        val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(StateOfChargeWidget::class.java)
-
-        glanceIds.forEach {glanceId ->
-            val prevWidgetState = getAppWidgetState(
-                context = context,
-                definition = CarDataInfoStateDefinition,
-                glanceId = glanceId)
-
-            updateAppWidgetState(
-                context = context,
-                definition = CarDataInfoStateDefinition,
-                glanceId = glanceId,
-                updateState = {
-                    prevWidgetState.copy(
-                        status = status
-                    )
-                }
-            )
-            StateOfChargeWidget().update(context, glanceId)
-        }
-    }
-    suspend fun updateData(context: Context, data: List<CarDataInfo.CarData>) {
-        val manager = GlanceAppWidgetManager(context)
-        val glanceIds = manager.getGlanceIds(StateOfChargeWidget::class.java)
-
-        glanceIds.forEach {glanceId ->
-            val prevWidgetState = getAppWidgetState(
-                context = context,
-                definition = CarDataInfoStateDefinition,
-                glanceId = glanceId)
-
-            updateAppWidgetState(
-                context = context,
-                definition = CarDataInfoStateDefinition,
-                glanceId = glanceId,
-                updateState = {
-                    prevWidgetState.copy(carData = data)
-                }
-            )
-            StateOfChargeWidget().update(context, glanceId)
-        }
-
-    }
-}

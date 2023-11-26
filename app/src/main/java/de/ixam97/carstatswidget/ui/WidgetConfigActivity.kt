@@ -53,7 +53,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import de.ixam97.carstatswidget.R
-import de.ixam97.carstatswidget.StateOfChargeWidget
+import de.ixam97.carstatswidget.widgets.StateOfChargeWidget
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.ui.theme.CarStatsWidgetTheme
 import de.ixam97.carstatswidget.util.intentToString
@@ -175,6 +175,20 @@ class WidgetConfigActivity: ComponentActivity() {
                                     trailingContent = {
                                         Switch(
                                             checked = configWidgetState.showLastSeenDates,
+                                            onCheckedChange = null,
+                                        )
+                                    }
+                                )
+                                Divider()
+                                ListItem(
+                                    modifier = Modifier
+                                        .clickable { viewModel.changeBasicLayout() },
+                                    headlineContent = {
+                                        Text(stringResource(R.string.widget_config_basic_layout))
+                                    },
+                                    trailingContent = {
+                                        Switch(
+                                            checked = configWidgetState.basicLayout,
                                             onCheckedChange = null,
                                         )
                                     }
