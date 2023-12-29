@@ -1,159 +1,160 @@
 package de.ixam97.carstatswidget.repository
 
+import android.content.Context
 import android.util.Log
-import de.ixam97.carstatswidget.RetrofitInstance
-import de.ixam97.carstatswidget.repository.tibberCredentials.TibberCredentials
-import de.ixam97.carstatswidget.repository.tibberData.TibberData
-import de.ixam97.carstatswidget.repository.tibberQuery.TibberQuery
-import kotlinx.coroutines.Dispatchers
+import de.ixam97.carstatswidget.util.AvailableApis
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.withContext
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.util.Date
 
 object CarDataRepository {
-    private const val TAG = "CarDataRepository"
+    private val TAG = "CarDataRepository"
 
     private val _carDataInfoState = MutableStateFlow<CarDataInfo>(CarDataInfo(CarDataStatus.Unavailable))
     val carDataInfoState: StateFlow<CarDataInfo> = _carDataInfoState.asStateFlow()
 
-    suspend fun getGitHubVersion(): String {
-        var version: String = "0.0.0"
-        withContext(Dispatchers.IO) {
-            RetrofitInstance.gitHubVersionChecker.run {
-                try {
-                    // Log.d(TAG, "URL: ${fetchGitHubVersion().raw().request.url}")
-                    version = fetchGitHubVersion().raw().request.url.toString().split("/v").run {
-                        if (this.size > 1) {
-                            this.last()
-                        } else {
-                            version
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Query failed: \n$e")
-                }
-            }
+    private val _networkState = MutableStateFlow<NetworkState>(NetworkState())
+    val networkState = _networkState.asStateFlow()
+
+    data class NetworkState(
+        val connected: Boolean? = null,
+        val message: String = ""
+    )
+
+    //var status: CarDataStatus = CarDataStatus.Available
+    //    private set
+    //var message = ""
+    //    private set
+
+    fun setNetworkError(message: String = "Unknown Error") {
+        // _carDataInfoState.update {
+        //     it.copy(
+        //         status = CarDataStatus.Unavailable,
+        //         message = "Network connection error"
+        //     )
+        // }
+        _networkState.update {
+            it.copy(connected = false, message = message)
         }
-        return version
     }
 
-    suspend fun verifyLoginData(mail: String, password: String): Boolean {
-        var verifyResponse: Boolean = false
-        withContext(Dispatchers.IO) {
-            de.ixam97.carstatswidget.RetrofitInstance.tibberApi.run {
-                val tibberCredentials = TibberCredentials(mail, password)
-                try {
-                    verifyResponse = (authenticateTibber(tibberCredentials).body()?.token?:"") != ""
-                } catch (e: Exception) {
-                    Log.e(TAG, "Query failed: \n$e")
-                }
-            }
+    fun resetNetworkError() {
+        _networkState.update {
+            it.copy(connected = true, message = "")
         }
-        return verifyResponse
     }
 
-    suspend fun getCarDataInfo(email: String, password: String): CarDataInfo {
+    fun startNetworkAttempt() {
+        if (networkState.value.connected != true) {
+            _networkState.update {
+                it.copy(connected = null)
+            }
+        }
+    }
+
+    suspend fun getLoggedInApis(context: Context): List<AvailableApis> {
+        // var preferencesManager = PreferencesManager(context = context)
+        val apisList = mutableListOf<AvailableApis>()
+
+        for (api in AvailableApis.list) {
+            if (verifyLogin(api, context)) {
+                apisList.add(api)
+            }
+        }
+/*
+        if (!PolestarRepository.isLoggedIn()) {
+            val mail = preferencesManager.getString("polestarMail", "")
+            val pass = preferencesManager.getString("polestarPassword", "")
+            Log.i(TAG, "Polestar: $mail, $pass")
+            if (mail != "" && pass != "") {
+                 if (PolestarRepository.login(ApiCredentials(mail, pass)) != null) {
+                     apisList.add(AvailableApis.Polestar)
+                 }
+            }
+        } else {
+            apisList.add(AvailableApis.Polestar)
+        }
+
+        if (!TibberRepository.isLoggedIn()) {
+            val mail = preferencesManager.getString("tibberMail", "")
+            val pass = preferencesManager.getString("tibberPassword", "")
+            Log.i(TAG, "Tibber: $mail, $pass")
+            if (mail != "" && pass != "") {
+                if (TibberRepository.verifyLoginData(mail, pass)) {
+                    apisList.add(AvailableApis.Tibber)
+                }
+            }
+        } else {
+            apisList.add(AvailableApis.Tibber)
+        }
+*/
+        return apisList
+    }
+
+    suspend fun logout(api: AvailableApis, context: Context) {
+        val repository = selectApi(api)
+        repository.logout(context)
+        Log.i(TAG, "${repository.name} logut.")
+    }
+
+    suspend fun login(api: AvailableApis, credentials: ApiCredentials, context: Context): Boolean {
+        val repository = selectApi(api)
+        val result = repository.login(context = context, apiCredentials = credentials)
+        Log.i(TAG, "${repository.name} login: $result.")
+        return result
+    }
+
+    suspend fun verifyLogin(api: AvailableApis, context: Context): Boolean {
+        val repository = selectApi(api)
+        val result =  repository.verifyLogin(context)
+        Log.i(TAG, "${repository.name} login verified: $result.")
+        return result
+    }
+
+    suspend fun getVehicles(api: AvailableApis, context: Context): List<CarDataInfo.CarData>? {
+        val repository = selectApi(api)
+        return repository.getVehicles(context)
+    }
+
+    suspend fun getVehicles(context: Context): List<CarDataInfo.CarData> {
+        // var dataUnavailable = true
+        // status = CarDataStatus.Available
         _carDataInfoState.update {
-            it.copy(
-                status = CarDataStatus.Loading
-            )
+            it.copy(status = CarDataStatus.Loading)
         }
-        var dataResponse: TibberData? = null
-        var errorMessage: String = "Unknown Error"
-        withContext(Dispatchers.IO) {
-            RetrofitInstance.tibberApi.run {
-                val tibberCredentials = TibberCredentials(email, password)
-                try {
-                    val auth = authenticateTibber(tibberCredentials)
-                    Log.d(TAG, "Auth code: ${auth.code()}: ${auth.message()}, ${auth.body()}")
-                    if (auth.code() != 200) throw httpException(auth.code())
-                    val token = auth.body()?.token?:""
-                    dataResponse = fetchTibberData(
-                        auth = "Bearer $token",
-                        query = TibberQuery("{me {homes {electricVehicles {id lastSeen name shortName battery {percent isCharging} imgUrl}}}}")
-                    ).body()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Query failed: \n$e")
-                    errorMessage = e.localizedMessage?: "Unknown error"
-                }
-
-                if (dataResponse != null) {
-                    Log.i(TAG, dataResponse.toString())
-                }
+        val vehicles = mutableListOf<CarDataInfo.CarData>()
+        for (api in AvailableApis.list) {
+            selectApi(api).getVehicles(context)?.let {
+                vehicles.addAll(it)
             }
         }
 
-        if (dataResponse != null) {
-            val simpleDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
-            val localeTimeDateFormat = DateFormat.getDateTimeInstance()
-            val lastUpdateDate = Date(System.currentTimeMillis())
-
-            val mutableCarData = mutableListOf<CarDataInfo.CarData>()
-
-            for (electricVehicle in dataResponse!!.data.me.homes[0].electricVehicles) {
-
-                val lastSeenDate = simpleDateFormat.parse(electricVehicle.lastSeen)!!
-
-                Log.d(TAG, "Last seen: ${localeTimeDateFormat.format(lastSeenDate)}")
-                Log.d(TAG, "Last updated: ${localeTimeDateFormat.format(lastUpdateDate)}")
-
-                mutableCarData.add(
-                    CarDataInfo.CarData(
-                        stateOfCharge = electricVehicle.battery.percent,
-                        lastSeen = localeTimeDateFormat.format(lastSeenDate),
-                        lastUpdated = localeTimeDateFormat.format(lastUpdateDate),
-                        imgUrl = electricVehicle.imgUrl,
-                        name = electricVehicle.name,
-                        shortName = electricVehicle.shortName,
-                        id = electricVehicle.id
-                    )
-                )
-            }
+        if (networkState.value.connected == true) {
             _carDataInfoState.update {
                 it.copy(
+                    carData = vehicles,
                     status = CarDataStatus.Available,
-                    carData = mutableCarData.toList()
+                    message = ""
                 )
             }
         } else {
             _carDataInfoState.update {
                 it.copy(
                     status = CarDataStatus.Unavailable,
-                    message = errorMessage
+                    message = networkState.value.message
                 )
             }
         }
 
-        return carDataInfoState.value
+
+        return vehicles
     }
 
-    fun setNotLoggedIn() {
-        _carDataInfoState.update {
-            it.copy(
-                status = CarDataStatus.NotLoggedIn
-            )
+    fun selectApi(api: AvailableApis): CarDataInterface {
+        return when (api) {
+            AvailableApis.Polestar -> PolestarRepository
+            AvailableApis.Tibber -> TibberRepository
         }
-    }
-
-    fun httpException(code: Int): Exception {
-        val message = when (code) {
-            400 -> "Bad Request"
-            401 -> "Unauthorized"
-            403 -> "Forbidden"
-            404 -> "Not Found"
-            500 -> "Internal Server Error"
-            501 -> "Not Implemented"
-            502 -> "Bad Gateway"
-            503 -> "Service Unavailable"
-            504 -> "Gateway Timeout"
-
-            else -> "Unknown code"
-        }
-        return Exception("HTTP Code $code: $message")
     }
 }

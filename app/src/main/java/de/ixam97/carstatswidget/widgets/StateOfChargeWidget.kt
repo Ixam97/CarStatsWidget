@@ -98,9 +98,7 @@ class StateOfChargeWidget : GlanceAppWidget() {
                         is CarDataStatus.NotLoggedIn -> {
                             NotLoggedInComponent()
                         }
-                        is CarDataStatus.Loading,
-                        is CarDataStatus.Unavailable,
-                        is CarDataStatus.Available -> {
+                        else -> {
                             Column (
                                 modifier = GlanceModifier
                                     .fillMaxHeight()
@@ -132,7 +130,9 @@ class StateOfChargeWidget : GlanceAppWidget() {
                                         Spacer(modifier = GlanceModifier.size(gap))
                                     }
                                 }
-                                if (filteredCarData.isEmpty()) {
+                                if (stateOfChargeWidgetState.status == CarDataStatus.ConfigChanged) {
+                                    UnavailableComponent("Widget configuration changed. Please reconfigure Widget")
+                                } else if (filteredCarData.isEmpty()) {
                                     UnavailableComponent("No data available")
                                 }
                             }

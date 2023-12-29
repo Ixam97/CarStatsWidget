@@ -7,9 +7,10 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import de.ixam97.carstatswidget.repository.CarDataRepository
 import de.ixam97.carstatswidget.widgets.StateOfChargeWidgetData
 import de.ixam97.carstatswidget.widgets.StateOfChargeWidgetStateDefinition
-import de.ixam97.carstatswidget.repository.CarDataRepository
+import de.ixam97.carstatswidget.repository.TibberRepository
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
 import de.ixam97.carstatswidget.widgets.WidgetConfig
@@ -49,7 +50,8 @@ class WidgetConfigViewModel(application: Application) : AndroidViewModel(applica
 
     init {
         viewModelScope.launch {
-            CarDataRepository.carDataInfoState.collect {carDataInfo ->
+            // TibberRepository.carDataInfoState.collect { carDataInfo ->
+            CarDataRepository.carDataInfoState.collect { carDataInfo ->
                 if (!widgetConfigState.value.ready) {
                     val vehicleList: MutableList<WidgetConfigState.Vehicle> = mutableListOf()
                     if (carDataInfo.carData.isEmpty()) {
@@ -58,7 +60,7 @@ class WidgetConfigViewModel(application: Application) : AndroidViewModel(applica
                     carDataInfo.carData.forEach {
                         vehicleList.add(WidgetConfigState.Vehicle(
                             id = it.id,
-                            name = it.name
+                            name = "${it.name} (${it.api})"
                         ))
                     }
                     _widgetConfigState.update {

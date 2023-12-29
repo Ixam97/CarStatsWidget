@@ -14,8 +14,8 @@ android {
         applicationId = "de.ixam97.carstatswidget"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "0.1.5"
+        versionCode = 6
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -88,4 +88,5 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
+    implementation(kotlin("reflect"))
 }

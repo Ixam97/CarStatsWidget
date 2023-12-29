@@ -32,7 +32,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import de.ixam97.carstatswidget.R
 import de.ixam97.carstatswidget.ui.MainViewModel
 
-@Composable
+// @Composable
+/*
 fun TibberLogin(modifier: Modifier = Modifier, viewModel: MainViewModel = viewModel()) {
     val tibberLoginState by viewModel.tibberLoginState.collectAsState()
     val mail = viewModel.tibberMail
@@ -51,7 +52,7 @@ fun TibberLogin(modifier: Modifier = Modifier, viewModel: MainViewModel = viewMo
             singleLine = true,
             label = { Text(text = stringResource(R.string.label_mail)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            onValueChange = { viewModel.mailEntered(it) }
+            onValueChange = { /* viewModel.mailEntered(it) */ }
         )
         OutlinedTextField(
             modifier = Modifier
@@ -63,7 +64,7 @@ fun TibberLogin(modifier: Modifier = Modifier, viewModel: MainViewModel = viewMo
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             trailingIcon = {
                 IconButton(
-                    onClick = { viewModel.passwordHideToggle() }
+                    onClick = { /* viewModel.passwordHideToggle() */ }
                 ) {
                     when (tibberLoginState.passwordVisible) {
                         true -> {
@@ -81,7 +82,7 @@ fun TibberLogin(modifier: Modifier = Modifier, viewModel: MainViewModel = viewMo
                     }
                 }
             },
-            onValueChange = { viewModel.passwordEntered(it) }
+            onValueChange = { /* viewModel.passwordEntered(it) */ }
         )
         if (tibberLoginState.loginFailed) {
             Card(
@@ -134,3 +135,4 @@ fun TibberLogin(modifier: Modifier = Modifier, viewModel: MainViewModel = viewMo
         }
     }
 }
+*/

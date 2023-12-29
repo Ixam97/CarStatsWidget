@@ -23,6 +23,8 @@ sealed interface CarDataStatus {
     object Unavailable: CarDataStatus
     @Serializable
     object Loading: CarDataStatus
+    @Serializable
+    object ConfigChanged: CarDataStatus
 }
 
 @Serializable
@@ -41,7 +43,10 @@ data class CarDataInfo(
         val lastUpdated: String,
         val imgUrl: String,
         val name: String,
-        val shortName: String,
-        val id: String
+        val shortName: String = "",
+        val id: String,
+        val api: String,
+        val isCharging: Boolean? = null,
+        val isConnected: Boolean? = null,
     )
 }

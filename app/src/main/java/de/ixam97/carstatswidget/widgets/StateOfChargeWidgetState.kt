@@ -1,6 +1,7 @@
 package de.ixam97.carstatswidget.widgets
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
@@ -59,7 +60,8 @@ object StateOfChargeWidgetStateDefinition: GlanceStateDefinition<StateOfChargeWi
                 input.readBytes().decodeToString()
             )
         } catch (exception: SerializationException) {
-            throw CorruptionException("Could not read data: ${exception.message}")
+            Log.e("Widget Data Store", "Could not read data: ${exception.message}")
+            StateOfChargeWidgetState(CarDataStatus.ConfigChanged)
         }
 
         override suspend fun writeTo(t: StateOfChargeWidgetState, output: OutputStream) {

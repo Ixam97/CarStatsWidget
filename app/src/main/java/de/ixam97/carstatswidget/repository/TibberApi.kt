@@ -1,8 +1,8 @@
 package de.ixam97.carstatswidget.repository
 
-import de.ixam97.carstatswidget.repository.tibberBarerToken.TibberBarerToken
-import de.ixam97.carstatswidget.repository.tibberCredentials.TibberCredentials
-import de.ixam97.carstatswidget.repository.tibberData.TibberData
+import de.ixam97.carstatswidget.repository.responses.TibberBarerToken
+import de.ixam97.carstatswidget.repository.responses.TibberCredentials
+import de.ixam97.carstatswidget.repository.responses.TibberData
 import de.ixam97.carstatswidget.repository.tibberQuery.TibberQuery
 import retrofit2.Response
 import retrofit2.http.Body

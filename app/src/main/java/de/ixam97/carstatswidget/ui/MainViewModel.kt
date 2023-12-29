@@ -12,10 +12,16 @@ import androidx.work.WorkManager
 import de.ixam97.carstatswidget.BuildConfig
 import de.ixam97.carstatswidget.CarStatsWidget
 import de.ixam97.carstatswidget.repository.CarDataInfo
-import de.ixam97.carstatswidget.repository.CarDataRepository
+import de.ixam97.carstatswidget.repository.TibberRepository
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.repository.CarDataWorker
+import de.ixam97.carstatswidget.repository.CarDataRepository
+import de.ixam97.carstatswidget.repository.ApiCredentials
+import de.ixam97.carstatswidget.repository.PolestarRepository
+import de.ixam97.carstatswidget.util.AvailableApis
 import de.ixam97.carstatswidget.util.SemanticVersion
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,11 +33,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
     companion object {
         private const val TAG = "MainViewModel"
     }
-
+/*
     val preferencesManager = de.ixam97.carstatswidget.PreferencesManager(context = application)
     val workManager = WorkManager.getInstance(application)
 
     val manager = GlanceAppWidgetManager(application)
+
+ */
     val applicationContext = application
 
     private val _globalState = MutableStateFlow(GlobalState())
@@ -39,6 +47,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
 
     data class GlobalState(
         val isLoggedIn: Boolean? = null,
+        val loggedInApis: List<AvailableApis> = listOf(),
         val updateAvailable: Boolean? = null,
         val currentVersion: String = BuildConfig.VERSION_NAME,
         val availableVersion: String? = null
@@ -53,25 +62,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
         val passwordVisible: Boolean = false
     )
 
+    data class PolestarLoginState(
+        val loginPossible: Boolean = false,
+        val loginFailed: Boolean = false,
+        val passwordVisible: Boolean = false
+    )
+
     private val _carInfoState = MutableStateFlow(CarInfoState())
     val carInfoState: StateFlow<CarInfoState> = _carInfoState.asStateFlow()
 
     private val _carDataState = MutableStateFlow<List<CarDataInfo.CarData>>(emptyList())
     val carDataState: StateFlow<List<CarDataInfo.CarData>> = _carDataState.asStateFlow()
 
+    private val _networkState = MutableStateFlow<CarDataRepository.NetworkState>(CarDataRepository.NetworkState())
+    val networkState = _networkState.asStateFlow()
+
     data class CarInfoState(
         val carDataInfo: CarDataInfo = CarDataInfo(CarDataStatus.Unavailable, message = "No Data"),
         val dataAvailable: Boolean = false,
         val dataRequested: Boolean = false
     )
-
+/*
     var tibberMail by mutableStateOf(preferencesManager.getString("tibberMail", ""))
         private set
 
     var tibberPassword by mutableStateOf(preferencesManager.getString("tibberPassword", ""))
         private set
 
+ */
+
     init {
+        Log.i(TAG, "Init")
+        requestCarData(initial = true)
+
+        /*
         if (tibberMail != "" && tibberPassword != "") {
             _tibberLoginState.update {
                 it.copy(loginPossible = true)
@@ -85,10 +109,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
                 it.copy(isLoggedIn = false)
             }
         }
+        */
         viewModelScope.launch {
+            // TibberRepository.carDataInfoState.collect { carDataInfo ->
             CarDataRepository.carDataInfoState.collect { carDataInfo ->
                 Log.d("ViewModel", "Car data status: ${carDataInfo.status}")
                 _carInfoState.update { carInfoState ->
+                    validateLogins()
                     carInfoState.copy(carDataInfo = carDataInfo)
                 }
                 if (carDataInfo.status == CarDataStatus.Available) {
@@ -98,6 +125,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
                 }
             }
         }
+
+        viewModelScope.launch {
+            CarDataRepository.networkState.collect { networkState ->
+                _networkState.update { networkState }
+            }
+        }
+
         viewModelScope.launch {
             getApplication<CarStatsWidget>().gitHubVersionStateFlow.collect {gitHubVersion ->
                 val currentVersion = BuildConfig.VERSION_NAME
@@ -115,7 +149,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
         }
         requestCarData()
     }
-
+/*
     fun mailEntered(mail: String) {
         this.tibberMail = mail
         checkValidInputs()
@@ -143,15 +177,59 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
             logout()
         }
     }
-
-    fun requestCarData() {
-        CarDataWorker.enqueue(applicationContext, true)
+*/
+    fun requestCarData(initial: Boolean = false) {
+        if (networkState.value.connected == false || initial) {
+            viewModelScope.launch {
+                validateLogins().join()
+                CarDataWorker.enqueue(applicationContext, true)
+            }
+        } else {
+            CarDataWorker.enqueue(applicationContext, true)
+        }
     }
 
     fun checkForUpdates() {
         (applicationContext as CarStatsWidget).updateGitHubVersion()
     }
 
+    fun validateLogins(): Job {
+        _globalState.update {
+            it.copy(isLoggedIn = null)
+        }
+        return viewModelScope.launch {
+            _globalState.update {
+                Log.i(TAG, "Checking logged in APIs")
+                val loggedInApis = CarDataRepository.getLoggedInApis(applicationContext)
+                it.copy(
+                    loggedInApis = loggedInApis,
+                    isLoggedIn = loggedInApis.isNotEmpty()
+                )
+            }
+        }
+    }
+
+    fun logoutApi(api: AvailableApis) {
+        viewModelScope.launch {
+            CarDataRepository.logout(api, applicationContext)
+            validateLogins().join()
+        }
+    }
+
+    // fun polestarTest() {
+    //     viewModelScope.launch {
+    //         val credentials = ApiCredentials(
+    //             "maxigoldschmidt@gmail.com",
+    //             "7PBX*GqE8xGXpvM"
+    //         )
+    //         val bearerToken = PolestarRepository.login(credentials)
+    //         delay(2000)
+    //         PolestarRepository.checkTokenValidity()
+    //         delay(2000)
+    //         PolestarRepository.refreshToken()
+    //     }
+    // }
+/*
     private fun checkValidInputs() {
         val validInputs = tibberMail.isNotEmpty() && tibberPassword.isNotEmpty()
 
@@ -193,4 +271,5 @@ class MainViewModel(application: Application) : AndroidViewModel(application = a
             it.copy(isLoggedIn = false)
         }
     }
+*/
 }

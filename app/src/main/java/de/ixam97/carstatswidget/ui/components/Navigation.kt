@@ -9,13 +9,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import de.ixam97.carstatswidget.ui.MainViewModel
 import de.ixam97.carstatswidget.ui.Screen
 import de.ixam97.carstatswidget.ui.screens.AboutScreen
 import de.ixam97.carstatswidget.ui.screens.LicensesScreen
+import de.ixam97.carstatswidget.ui.screens.LoginScreen
 import de.ixam97.carstatswidget.ui.screens.MainScreen
+import de.ixam97.carstatswidget.util.AvailableApis
 import slideComposable
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -47,6 +51,17 @@ fun Navigation(mainViewModel: MainViewModel, destination: String? = null): NavCo
             ) {
                 LicensesScreen(navController)
             }
+        slideComposable(
+            route = Screen.Login.route + "/{api}",
+            arguments = listOf(
+                navArgument("api") {
+                    type = NavType.StringType
+                    defaultValue = "Tibber"
+                }
+            )
+        ) {
+            LoginScreen(mainViewModel, navController, AvailableApis.get(it.arguments?.getString("api")))
+        }
     }
 
     if (destination != null) {

@@ -39,7 +39,7 @@ fun LoggedInComponent(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        Card( modifier = Modifier
+        /* Card( modifier = Modifier
             .fillMaxWidth(),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -49,7 +49,7 @@ fun LoggedInComponent(viewModel: MainViewModel) {
                 modifier = Modifier.padding(16.dp),
                 text = stringResource(R.string.login_name, viewModel.tibberMail) //"Logged in as ${viewModel.tibberMail}"
             )
-        }
+        } */
         if (globalState.updateAvailable == true) {
             Card( modifier = Modifier
                 .clickable {

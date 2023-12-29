@@ -18,18 +18,22 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -45,7 +49,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -59,11 +66,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import de.ixam97.carstatswidget.BuildConfig
 import de.ixam97.carstatswidget.R
+import de.ixam97.carstatswidget.repository.CarDataRepository
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import de.ixam97.carstatswidget.ui.MainViewModel
 import de.ixam97.carstatswidget.ui.Screen
+import de.ixam97.carstatswidget.ui.components.ErrorCard
 import de.ixam97.carstatswidget.ui.components.LoggedInComponent
-import de.ixam97.carstatswidget.ui.components.TibberLogin
+import de.ixam97.carstatswidget.ui.components.LoginRequiredCard
+import de.ixam97.carstatswidget.ui.components.LogoutDialog
+import de.ixam97.carstatswidget.util.AvailableApis
 
 @OptIn(
     ExperimentalLayoutApi::class,
@@ -77,8 +88,13 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
     // val mainViewModel: MainViewModel = viewModel()
     val globalState by mainViewModel.globalState.collectAsState()
     val carInfoState by mainViewModel.carInfoState.collectAsState()
+    val networkState by mainViewModel.networkState.collectAsState()
     val isRefreshing = (carInfoState.carDataInfo.status == CarDataStatus.Loading)
     val pullRefreshState = rememberPullRefreshState(isRefreshing, { mainViewModel.requestCarData() })
+
+    var showMenu by remember { mutableStateOf(false) }
+
+    var logoutDialogApi by remember { mutableStateOf<AvailableApis?>(null) }
 
     Surface(
         modifier = Modifier
@@ -94,16 +110,16 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
                     title = { Text ("Car Stats Widget") },
                     scrollBehavior = scrollBehavior,
                     actions = {
-                        if (globalState.isLoggedIn == true) {
-                            IconButton(
-                                onClick = { mainViewModel.logoutPressed() }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.Logout,
-                                    contentDescription = null
-                                )
-                            }
-                        }
+                        // if (globalState.isLoggedIn == true) {
+                        //     IconButton(
+                        //         onClick = { mainViewModel.logoutPressed() }
+                        //     ) {
+                        //         Icon(
+                        //             imageVector = Icons.Outlined.Logout,
+                        //             contentDescription = null
+                        //         )
+                        //     }
+                        // }
 
                         IconButton(
                             onClick = { navController.navigate(Screen.About.route) }
@@ -114,11 +130,58 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
                             )
                         }
 
+                        // IconButton(
+                        //     onClick = { mainViewModel.polestarTest() }
+                        // ) {
+                        //     Icon(
+                        //         imageVector = Icons.Default.Construction,
+                        //         contentDescription = null
+                        //     )
+                        // }
+
+                        IconButton(
+                            onClick = { showMenu = !showMenu },
+                            enabled = networkState.connected?:false && globalState.isLoggedIn != null
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = null
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            for (api in AvailableApis.list) {
+                                if (globalState.loggedInApis.contains(api)) {
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            logoutDialogApi = api
+                                            showMenu = false
+                                        },
+                                    ) {
+                                        Icon(Icons.Default.Delete, null)
+                                        Spacer(modifier = Modifier.size(12.dp))
+                                        Text(CarDataRepository.selectApi(api).name)
+                                    }
+                                } else {
+                                    DropdownMenuItem(
+                                        onClick = { navController.navigate(Screen.Login.route + "/" + CarDataRepository.selectApi(api).name) },
+                                    ) {
+                                        Icon(Icons.Default.Add, null)
+                                        Spacer(modifier = Modifier.size(12.dp))
+                                        Text(CarDataRepository.selectApi(api).name)
+                                    }
+                                }
+                            }
+                        }
+
                     }
                 )
             },
             floatingActionButton = {
-                when (globalState.isLoggedIn) {
+                when (globalState.loggedInApis.isNotEmpty()) {
                     true -> {
                         if (!isRefreshing) {
                             ExtendedFloatingActionButton(
@@ -131,6 +194,7 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
                             )
                         }
                     }
+                    /*
                     false -> {
                         ExtendedFloatingActionButton(
                             modifier = Modifier
@@ -141,6 +205,7 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
                             onClick = { mainViewModel.loginPressed() },
                         )
                     }
+                    */
                     else  -> {}
                 }
             }
@@ -161,26 +226,57 @@ fun MainScreen(mainViewModel: MainViewModel, navController: NavController) {
                     .fillMaxSize()
                     .padding(modifiedPadding)
                     .consumeWindowInsets(modifiedPadding)
-                    .pullRefresh(pullRefreshState, globalState.isLoggedIn ?: false)
+                    .pullRefresh(pullRefreshState, globalState.loggedInApis.isNotEmpty())
 
             ) {
+
+                if (logoutDialogApi != null) {
+                    LogoutDialog(
+                        onDismissRequest = {
+                            logoutDialogApi = null
+                        },
+                        onConfirmation = {
+                            mainViewModel.logoutApi(logoutDialogApi!!)
+                            mainViewModel.requestCarData()
+                            logoutDialogApi = null
+                        },
+                        apiName = CarDataRepository.selectApi(logoutDialogApi!!).name
+                    )
+                }
+
                 Column (modifier = Modifier
                     .fillMaxHeight()
                     .verticalScroll(rememberScrollState())
                 ) {
+                    if (networkState.connected == false) {
+                        ErrorCard(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                            message = "Network connection Error: ${networkState.message}",
+                            viewModel = mainViewModel)
+                    }
                     when (globalState.isLoggedIn) {
+                        // false -> {
+                        //     TibberLogin(viewModel = mainViewModel)
+                        // }
                         false -> {
-                            TibberLogin(viewModel = mainViewModel)
+                            if (networkState.connected == true) {
+                                LoginRequiredCard(
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
                         }
                         true -> {
                             LoggedInComponent(mainViewModel)
                         }
                         else -> {
-                            CircularProgressIndicator(
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            )
+                            if (networkState.connected == true) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            }
                         }
                     }
+
                     Spacer(
                         modifier = Modifier
                             .height(56.dp)

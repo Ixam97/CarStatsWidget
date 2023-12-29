@@ -4,7 +4,8 @@
     <string name="label_mail">Mail</string>
     <string name="label_password">Passwort</string>
     <string name="login_failed_prompt">Login fehlgeschlagen!</string>
-    <string name="login_data_hint">Diese Daten werden ausschließlich benutzt, um auf die öffentliche Tibber-API zuzugreifen. Diese App steht nicht in direkter Verbindung mit Tibber.</string>
+    <string name="login_data_hint">Diese Daten werden ausschließlich benutzt, um auf die jeweilige API zuzugreifen. Diese App ist nicht mit dem API-Anbieter verbunden oder wird von ihm unterstützt.</string>
+    <string name="login_required_hint">Bitte logge dich in eine oder mehrere der verfügbaren APIs ein, um die App zu verwenden.</string>
     <string name="login_button_label">Einloggen</string>
 
     <string name="data_unavailable_prompt">Daten nicht verfügbar!</string>
@@ -32,4 +33,13 @@
     <string name="widget_config_show_vehicle_name">Zeige Fahrzeugnamen</string>
     <string name="widget_config_visible_vehicles">Anzuzeigende Fahrzeuge wählen:</string>
     <string name="widget_config_basic_layout">Schlichtes Layout</string>
+
+    <string name="api_hint_polestar">Diese API wird von Polestar nicht offiziell unterstützt. Ihre funktionalität kann nicht sichergestellt werden und sie kann zu jedem Zeitpunkt ohne vorherige Ankündigung abgeschaltet werden!</string>
+
+    <string name="dialog_logout_title">API-Verbindung trennen</string>
+    <string name="dialog_logout_message">Sind Sie sicher, dass Sie die Verbindung mit %1$s trennen wollen?</string>
+
+    <string name="button_confirm">Bestätigen</string>
+    <string name="button_cancel">Abbrechen</string>
+
 </resources>

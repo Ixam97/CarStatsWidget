@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
 import de.ixam97.carstatswidget.repository.CarDataRepository
+import de.ixam97.carstatswidget.repository.TibberRepository
 import de.ixam97.carstatswidget.repository.CarDataStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +32,7 @@ class CarStatsWidget: Application() {
             _gitHubVersionStateFlow.update {
                 null
             }
-            val gitHubVersion = CarDataRepository.getGitHubVersion()
+            val gitHubVersion = TibberRepository.getGitHubVersion()
             _gitHubVersionStateFlow.update {
                 gitHubVersion
             }
@@ -42,8 +43,10 @@ class CarStatsWidget: Application() {
     override fun onCreate() {
         super.onCreate()
         CoroutineScope(Dispatchers.IO).launch {
-            CarDataRepository.carDataInfoState.collect { carDataInfo ->
-                if (carDataInfo.status == CarDataStatus.Unavailable) {
+            // TibberRepository.carDataInfoState.collect { carDataInfo ->
+            CarDataRepository.networkState.collect { networkState ->
+                Log.w(TAG, "Network state: $networkState")
+                if (networkState.connected == false) {
                     val alarmManager =
                         applicationContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
                     val pendingIntent = PendingIntent.getBroadcast(
@@ -52,7 +55,7 @@ class CarStatsWidget: Application() {
                         Intent(applicationContext, WidgetUpdateReceiver::class.java),
                         PendingIntent.FLAG_IMMUTABLE
                     )
-                    Log.d(TAG, "Reattempting Tibber fetch")
+                    Log.d(TAG, "Reattempting connection")
                     // sendBroadcast(Intent(applicationContext, WidgetUpdateReceiver::class.java))
                     alarmManager.set(
                         AlarmManager.ELAPSED_REALTIME,

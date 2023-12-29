@@ -54,9 +54,11 @@ fun CarInfoCard(viewModel: MainViewModel) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        if (carInfoState.carDataInfo.status == CarDataStatus.Unavailable) {
-            ErrorCard(carInfoState.carDataInfo.message?: "No Data", viewModel)
-        }
+        // if (carInfoState.carDataInfo.status == CarDataStatus.Unavailable) {
+        //     ErrorCard(
+        //         message = carInfoState.carDataInfo.message?: "No Data",
+        //         viewModel = viewModel)
+        // }
 
         for (carData in carDataState) {
             Card(
@@ -98,9 +100,13 @@ fun CarInfoCard(viewModel: MainViewModel) {
 }
 
 @Composable
-fun ErrorCard(message: String, viewModel: MainViewModel) {
+fun ErrorCard(
+    modifier: Modifier = Modifier,
+    message: String,
+    viewModel: MainViewModel) {
 
     Card(
+        modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Column(
@@ -148,7 +154,7 @@ fun CarInfo(carData: CarDataInfo.CarData, refresh: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = carData.id,
+            text = "${carData.id} | ${carData.api}",
             fontSize = 9.sp,
             color = Color(1f, 1f, 1f, 0.4f)
         )
