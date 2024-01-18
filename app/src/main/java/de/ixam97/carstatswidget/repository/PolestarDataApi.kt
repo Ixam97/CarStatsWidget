@@ -59,7 +59,7 @@ interface PolestarDataApi {
     ): Response<PolestarGetCars>
 
     @Headers("content-type: application/json")
-    @POST("/eu-north-1/my-star/")
+    @POST("/eu-north-1/mystar-v2/")
     suspend fun getBatteryData(
         @Header("Authorization") auth: String,
         @Body body: PolestarRepository.GetBatteryDataBody
